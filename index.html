@@ -448,7 +448,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15p
       <button class="login-demo-btn" onclick="doDemo()">体验 Demo · Try Demo</button>
       <button class="login-demo-btn" style="margin-top:6px;font-size:8px;opacity:0.3" onclick="clearStorage()">清除缓存 · Clear cache</button>
     </div>
-    <div class="login-footer">v1.1 · 京都和纸</div>
+    <div class="login-footer">v1.2 · 京都和纸</div>
   </div>
 
   <!-- STATUS BAR -->
@@ -1318,7 +1318,7 @@ function rOverview() {
   var nights = nightsBetween(d.start,d.end);
   var total = d.expenses.reduce(function(s,e){return s+e.amount;},0);
   var cur = getCurrency();
-  var curSym = cur==='CNY'||cur==='JPY'?'¥':cur==='HKD'?'HK$':cur==='AUD'?'A$':'$';
+  var curSym = cur==='CNY'?'¥':cur==='JPY'?'J¥':cur==='HKD'?'HK$':cur==='AUD'?'A$':'$';
   var destName = LANG==='zh'?d.cn:d.en;
   var pct = sTotal?Math.round(sDone/sTotal*100):0;
 
@@ -1940,7 +1940,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15p
       <button class="login-demo-btn" onclick="doDemo()">体验 Demo · Try Demo</button>
       <button class="login-demo-btn" style="margin-top:6px;font-size:8px;opacity:0.3" onclick="clearStorage()">清除缓存 · Clear cache</button>
     </div>
-    <div class="login-footer">v1.1 · 京都和纸</div>
+    <div class="login-footer">v1.2 · 京都和纸</div>
   </div>
 
   <!-- STATUS BAR -->
@@ -1993,7 +1993,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15p
   </div>
 </div>
 
-<script>
+
+// === JS SECTION 2 ===
+
 
 // ============ LANG ============
 var LANG='zh';
@@ -2810,7 +2812,7 @@ function rOverview() {
   var nights = nightsBetween(d.start,d.end);
   var total = d.expenses.reduce(function(s,e){return s+e.amount;},0);
   var cur = getCurrency();
-  var curSym = cur==='CNY'||cur==='JPY'?'¥':cur==='HKD'?'HK$':cur==='AUD'?'A$':'$';
+  var curSym = cur==='CNY'?'¥':cur==='JPY'?'J¥':cur==='HKD'?'HK$':cur==='AUD'?'A$':'$';
   var destName = LANG==='zh'?d.cn:d.en;
   var pct = sTotal?Math.round(sDone/sTotal*100):0;
 
@@ -3185,7 +3187,7 @@ function rBudget() {
   var bal = calcBal(); var txns = calcSettle(bal);
   var total = exps.reduce(function(s,e){return s+e.amount;},0);
   var cur = getCurrency();
-  var curSym = cur==='CNY'||cur==='JPY'?'¥':cur==='HKD'?'HK$':cur==='AUD'?'A$':'$';
+  var curSym = cur==='CNY'?'¥':cur==='JPY'?'J¥':cur==='HKD'?'HK$':cur==='AUD'?'A$':'$';
   var half = total/Math.max(1,members.length);
   var CURRENCIES = ['HKD','CNY','AUD','USD','EUR','GBP','JPY','SGD'];
   var curOpts = CURRENCIES.map(function(c){return'<option value="'+c+'"'+(c===cur?' selected':'')+'>'+c+'</option>';}).join('');
