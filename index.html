@@ -1,0 +1,1793 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WanderPlan">
+<title>WanderPlan · 京都和纸</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500;700&family=Noto+Sans+JP:wght@400;500&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
+<style>
+/* ============ WASHI DESIGN SYSTEM · 京都和纸 ============ */
+:root {
+  --bg:    #F5F1EA;
+  --bg2:   #EBE5DA;
+  --bg3:   #E0D8CC;
+  --ink:   #1A1A1A;
+  --ink2:  #3A3A3A;
+  --muted: #7A7268;
+  --hair:  rgba(26,26,26,0.10);
+  --hair2: rgba(26,26,26,0.18);
+  --red:   #B5462A;
+  --redD:  #8C2E1A;
+  --redL:  rgba(181,70,42,0.08);
+  --card:  #FFFFFF;
+  --err:   #B5462A;
+  --errbg: rgba(181,70,42,0.06);
+  --serif-jp: "Noto Serif JP","Cormorant Garamond",serif;
+  --serif:    "Instrument Serif","Cormorant Garamond",serif;
+  --sans:     "Noto Sans JP",-apple-system,system-ui,sans-serif;
+  --mono:     "JetBrains Mono",ui-monospace,monospace;
+}
+/* Washi is a paper/light theme — dark mode not applied */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15px}
+
+/* ── SHELL ── */
+.shell{display:flex;flex-direction:column;height:100vh;height:100dvh;position:relative}
+
+/* ── PAPER GRAIN (background texture) ── */
+.grain{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(circle at 18% 8%, rgba(181,70,42,0.035) 0,transparent 42%),
+    repeating-linear-gradient(0deg,rgba(0,0,0,0.011) 0 1px,transparent 1px 3px);
+}
+
+/* ── STATUS BAR SPACER ── */
+.sb{height:env(safe-area-inset-top,0px);background:var(--bg);position:relative;z-index:10}
+
+/* ── TOP CHROME ── */
+.chrome{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 22px 8px;
+  background:var(--bg);
+  border-bottom:1px solid var(--hair);
+  position:relative;z-index:10;flex-shrink:0;
+}
+.logo-wrap{display:flex;align-items:center;gap:10px}
+.hanko{
+  width:30px;height:30px;background:var(--red);color:var(--bg);
+  border-radius:4px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--serif-jp);font-weight:700;font-size:16px;
+  transform:rotate(-3deg);flex-shrink:0;
+}
+.logo-name{font-family:var(--serif);font-size:15px;font-style:italic;line-height:1;color:var(--ink)}
+.logo-sub{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:1.5px;margin-top:2px}
+.chrome-right{display:flex;align-items:center;gap:10px}
+.lang-pill{
+  font-family:var(--mono);font-size:9px;letter-spacing:1.5px;
+  padding:4px 9px;border:1px solid var(--hair2);background:transparent;
+  color:var(--muted);cursor:pointer;text-transform:uppercase;
+}
+.lang-pill:active{background:var(--bg2)}
+.user-pill{
+  display:flex;align-items:center;gap:6px;
+  padding:3px 8px 3px 3px;border:1px solid var(--hair2);cursor:pointer;
+}
+.user-pip{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:9px;font-weight:500;color:white;flex-shrink:0}
+.user-nm{font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+.sync-pip{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.sync-pip.synced{background:var(--red)}
+.sync-pip.syncing{background:#C4891C;animation:pulse 1s infinite}
+.sync-pip.offline{background:var(--muted)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── DEST CHIPS ── */
+.dest-scroll{display:flex;gap:0;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--hair);flex-shrink:0;position:relative;z-index:10;background:var(--bg)}
+.dest-scroll::-webkit-scrollbar{display:none}
+.dest-chip{
+  padding:9px 18px;font-family:var(--mono);font-size:9px;letter-spacing:2px;
+  text-transform:uppercase;color:var(--muted);cursor:pointer;white-space:nowrap;
+  border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;
+  background:transparent;border-top:none;border-left:none;border-right:none;
+  transition:color 0.15s;flex-shrink:0;
+}
+.dest-chip.active{color:var(--red);border-bottom-color:var(--red)}
+.dest-chip.add{border-bottom-color:transparent;color:var(--muted);border-bottom-style:dashed}
+.dest-chip-x{font-size:13px;opacity:0.5}
+
+/* ── TAB BAR (bottom) ── */
+.tabbar{
+  display:flex;border-top:1px solid var(--hair);background:var(--bg);
+  flex-shrink:0;position:relative;z-index:10;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.tab-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:10px 4px 8px;background:none;border:none;cursor:pointer;
+  font-family:var(--mono);font-size:8px;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--muted);transition:color 0.15s;
+}
+.tab-btn.active{color:var(--red)}
+.tab-btn svg{transition:opacity 0.15s}
+.tab-btn.active svg{opacity:1}
+
+/* ── BODY SCROLL ── */
+.body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;z-index:1}
+
+/* ── COMMON COMPONENTS ── */
+.page-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 22px 10px;
+  border-bottom:1px solid var(--hair);
+}
+.page-title-jp{font-family:var(--serif-jp);font-size:16px;font-weight:500;letter-spacing:4px;color:var(--ink)}
+.red-rule{height:2px;background:var(--red);margin:0 22px}
+.section-label{
+  font-family:var(--mono);font-size:9px;letter-spacing:2px;
+  color:var(--red);text-transform:uppercase;
+}
+.section-label-jp{font-family:var(--serif-jp);font-size:11px;color:var(--muted)}
+.hair-line{height:1px;background:var(--hair)}
+
+/* Forms */
+.f-label{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:5px}
+.f-inp{
+  width:100%;padding:11px 13px;
+  border:1px solid var(--hair2);background:var(--card);
+  color:var(--ink);font-size:15px;font-family:var(--sans);
+  -webkit-appearance:none;transition:border-color 0.15s;
+}
+.f-inp:focus{outline:none;border-color:var(--red)}
+.f-inp.err{border-color:var(--err);background:var(--errbg)}
+.f-inp::placeholder{color:var(--muted);font-size:13px}
+.f-sel{
+  width:100%;padding:11px 10px;
+  border:1px solid var(--hair2);background:var(--card);
+  color:var(--ink);font-size:14px;font-family:var(--sans);-webkit-appearance:none;
+}
+.f-group{display:flex;flex-direction:column;margin-bottom:14px}
+.req{color:var(--red)}
+.btn-red{
+  width:100%;padding:14px;background:var(--red);border:none;
+  font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:2px;
+  text-transform:uppercase;color:var(--bg);cursor:pointer;
+}
+.btn-red:active{background:var(--redD)}
+.btn-ghost{
+  width:100%;padding:12px;background:transparent;
+  border:1px solid var(--hair2);
+  font-family:var(--mono);font-size:9px;letter-spacing:2px;
+  text-transform:uppercase;color:var(--muted);cursor:pointer;
+}
+.btn-ghost:active{background:var(--bg2)}
+.del-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:4px 8px;line-height:1}
+.del-btn:active{color:var(--red)}
+.err-tip{font-family:var(--mono);font-size:9px;color:var(--err);margin-top:4px;letter-spacing:0.5px}
+.info-band{
+  border-left:2px solid var(--red);background:var(--redL);
+  padding:10px 14px;font-size:13px;color:var(--ink2);line-height:1.6;
+  margin-bottom:12px;
+}
+.warn-band{
+  border-left:2px solid #C4891C;background:rgba(196,137,28,0.07);
+  padding:10px 14px;font-size:13px;color:var(--ink2);line-height:1.6;
+  margin-bottom:12px;
+}
+
+/* ── OVERVIEW ── */
+.ov-hero{display:flex;padding:28px 22px 20px;align-items:flex-start;gap:16px}
+.ov-vert{writing-mode:vertical-rl;font-family:var(--serif-jp);font-size:38px;font-weight:500;line-height:1;letter-spacing:6px;color:var(--ink);flex-shrink:0}
+.ov-headline{flex:1;padding-top:4px}
+.ov-mono{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--red);margin-bottom:10px}
+.ov-serif-big{font-family:var(--serif);font-size:40px;font-weight:400;line-height:0.95;letter-spacing:-1.5px}
+.ov-serif-it{font-family:var(--serif);font-style:italic;font-size:24px;color:var(--ink2);margin-top:2px;letter-spacing:-0.5px}
+.ov-dates{font-family:var(--serif-jp);font-size:12px;color:var(--muted);margin-top:12px;line-height:1.7}
+.ov-index{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:22px}
+.stat-row{display:flex;align-items:baseline;gap:14px;padding:14px 22px;border-top:1px solid var(--hair)}
+.stat-row:last-child{border-bottom:1px solid var(--hair)}
+.stat-n{font-family:var(--serif);font-style:italic;font-size:22px;color:var(--red);width:28px;font-weight:400}
+.stat-label{flex:1;font-family:var(--mono);font-size:9.5px;letter-spacing:1.5px;color:var(--muted)}
+.stat-v{font-family:var(--serif);font-size:30px;font-weight:400;letter-spacing:-1px}
+.stat-u{font-size:13px;color:var(--muted);margin-left:4px;font-family:var(--serif-jp)}
+.upnext-card{margin:0 22px 24px;background:var(--card);border:1px solid var(--hair)}
+.upnext-img{height:130px;background:repeating-linear-gradient(45deg,var(--bg2) 0 8px,var(--bg) 8px 16px);position:relative;overflow:hidden}
+.img-label{position:absolute;top:8px;left:10px;font-family:var(--mono);font-size:8px;letter-spacing:1.5px;color:var(--muted)}
+.img-badge{position:absolute;bottom:10px;right:10px;padding:4px 8px;background:var(--red);color:var(--bg);font-family:var(--serif-jp);font-size:11px;font-weight:500}
+.upnext-body{padding:16px 18px}
+.upnext-title{font-family:var(--serif-jp);font-size:20px;font-weight:500;letter-spacing:1px;line-height:1.2}
+.upnext-sub{font-family:var(--serif);font-style:italic;font-size:13px;color:var(--muted);margin-top:6px}
+.flow-item{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--hair);cursor:pointer}
+.flow-item:first-child{border-top:1px solid var(--hair)}
+.flow-item:active{background:var(--bg2)}
+.flow-n{font-family:var(--serif);font-style:italic;font-size:20px;color:var(--red);width:24px;font-weight:400}
+.flow-label{flex:1;font-size:15px;font-weight:500;color:var(--ink)}
+.flow-sub{font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:0.5px;margin-top:2px}
+.flow-done{color:var(--red);font-size:14px}
+.flow-go{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--red);text-transform:uppercase}
+
+/* ── PLACES ── */
+.place-item{display:flex;align-items:flex-start;gap:14px;padding:16px 22px;border-bottom:1px solid var(--hair);cursor:pointer}
+.place-item:active{background:var(--bg2)}
+.place-item.visited{opacity:0.5}
+.place-num{font-family:var(--serif);font-style:italic;font-size:18px;color:var(--red);width:32px;flex-shrink:0;line-height:1.2}
+.place-name{font-family:var(--serif-jp);font-size:17px;font-weight:500;letter-spacing:0.5px;line-height:1.2}
+.place-item.visited .place-name{text-decoration:line-through}
+.place-sub{font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted);margin-top:4px}
+.place-dist{font-family:var(--mono);font-size:9px;color:var(--red);margin-top:4px;letter-spacing:0.5px}
+.place-chk{font-size:14px;color:var(--red);margin-left:auto;flex-shrink:0;opacity:0}
+.place-item.visited .place-chk{opacity:1}
+.add-place-form{padding:20px 22px;background:var(--bg2);border-top:2px solid var(--red)}
+
+/* ── SCHEDULE ── */
+.day-rail{display:flex;overflow-x:auto;padding:8px 22px 0;scrollbar-width:none;border-bottom:1px solid var(--hair)}
+.day-rail::-webkit-scrollbar{display:none}
+.day-tab{
+  display:inline-flex;flex-direction:column;align-items:center;gap:3px;
+  padding:10px 6px 12px;min-width:52px;border:none;cursor:pointer;
+  background:transparent;border-bottom:2px solid transparent;
+  color:var(--muted);flex-shrink:0;transition:all 0.15s;
+}
+.day-tab.active{border-bottom-color:var(--red);color:var(--ink)}
+.day-tab-d{font-family:var(--mono);font-size:8.5px;letter-spacing:1.5px}
+.day-tab-n{font-family:var(--serif);font-size:22px;font-weight:400;line-height:1}
+.day-tab-w{font-family:var(--serif-jp);font-size:8px;opacity:0.6}
+.day-chapter{padding:18px 22px 16px;border-bottom:1px solid var(--hair);position:relative}
+.day-stamp{
+  position:absolute;left:22px;top:18px;
+  width:32px;height:32px;background:var(--red);color:var(--bg);
+  font-family:var(--serif);font-style:italic;font-size:17px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.day-chapter-inner{padding-left:46px}
+.day-chapter-mono{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted)}
+.day-chapter-title{font-family:var(--serif-jp);font-size:26px;font-weight:500;letter-spacing:2px;line-height:1.1;margin-top:4px}
+.hotel-band{padding:8px 22px;background:var(--redL);border-bottom:1px solid var(--hair);display:flex;align-items:center;gap:8px}
+.hotel-band-none{background:rgba(196,137,28,0.06)}
+.hotel-band-txt{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--red);text-transform:uppercase}
+.hotel-band-name{font-family:var(--serif-jp);font-size:13px;font-weight:500;color:var(--ink);margin-left:4px}
+.tl-wrap{padding:0 22px 28px}
+.tl-item{display:flex;gap:14px}
+.tl-left{width:52px;flex-shrink:0;padding-top:16px}
+.tl-time{font-family:var(--mono);font-size:10px;color:var(--ink2);letter-spacing:0.5px}
+.tl-no{font-family:var(--serif);font-style:italic;font-size:13px;color:var(--red);margin-top:4px}
+.tl-right{flex:1;padding:16px 0 18px;border-bottom:1px solid var(--hair)}
+.tl-item:last-child .tl-right{border-bottom:none}
+.tl-kind{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.tl-kind-txt{font-family:var(--mono);font-size:8.5px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase}
+.tl-title{font-family:var(--serif-jp);font-size:18px;font-weight:500;line-height:1.2;letter-spacing:0.5px}
+.tl-sub{font-family:var(--serif);font-style:italic;font-size:13px;color:var(--muted);margin-top:4px}
+.tl-dist{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:6px;letter-spacing:0.5px}
+.tl-item.done .tl-title{text-decoration:line-through;color:var(--muted)}
+.add-to-day{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:13px;border:1px dashed var(--hair2);margin:8px 0 0;
+  cursor:pointer;font-family:var(--mono);font-size:9px;
+  letter-spacing:2px;color:var(--muted);text-transform:uppercase;
+  background:transparent;width:100%;
+}
+.add-to-day:active{background:var(--bg2)}
+.date-setup{padding:28px 22px;display:flex;flex-direction:column;gap:14px}
+
+/* ── PICKER ── */
+.picker-overlay{position:fixed;inset:0;background:rgba(26,26,26,0.65);z-index:200;display:flex;align-items:flex-end}
+.picker-sheet{
+  background:var(--bg);width:100%;max-height:80vh;
+  display:flex;flex-direction:column;
+  border-top:2px solid var(--red);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.picker-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-bottom:1px solid var(--hair);flex-shrink:0}
+.picker-ttl{font-family:var(--serif-jp);font-size:16px;font-weight:500;letter-spacing:3px}
+.picker-sub{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:3px}
+.picker-close{background:none;border:none;cursor:pointer;font-size:22px;color:var(--muted);padding:4px;line-height:1}
+.picker-list{overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
+.picker-item{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--hair);cursor:pointer}
+.picker-item:active{background:var(--bg2)}
+.pi-circ{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--hair2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s}
+.picker-item.sel .pi-circ{background:var(--red);border-color:var(--red)}
+.pi-tick{font-size:11px;color:var(--bg);display:none;font-weight:700}
+.picker-item.sel .pi-tick{display:block}
+.pi-name{font-family:var(--serif-jp);font-size:16px;font-weight:500}
+.pi-sub{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:3px;letter-spacing:0.5px}
+.pi-dist{font-family:var(--mono);font-size:9px;color:var(--muted);margin-left:auto;flex-shrink:0}
+.picker-ftr{padding:14px 22px;border-top:1px solid var(--hair);flex-shrink:0}
+
+/* ── STAY ── */
+.hotel-item{display:flex;align-items:flex-start;gap:12px;padding:16px 22px;border-bottom:1px solid var(--hair)}
+.hotel-icon{width:36px;height:36px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.hotel-name-main{font-family:var(--serif-jp);font-size:16px;font-weight:500;letter-spacing:0.5px}
+.hotel-name-sub{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:3px}
+.hotel-dates-txt{font-family:var(--mono);font-size:10px;color:var(--red);margin-top:6px;letter-spacing:0.5px;line-height:1.7}
+.hotel-add-form{padding:20px 22px;background:var(--bg2);border-top:2px solid var(--red)}
+
+/* ── TRANSPORT ── */
+.tp-item{display:flex;align-items:center;gap:12px;padding:14px 22px;border-bottom:1px solid var(--hair)}
+.tp-icon-box{width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--bg2);flex-shrink:0}
+.tp-name{font-family:var(--serif-jp);font-size:15px;font-weight:500}
+.tp-sub{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:3px}
+.tp-cost{font-family:var(--serif);font-size:16px;font-weight:400;color:var(--ink);margin-left:auto;flex-shrink:0}
+.tp-add-form{padding:20px 22px;background:var(--bg2);border-top:2px solid var(--red)}
+
+/* ── FOOD ── */
+.food-item{display:flex;align-items:center;gap:12px;padding:14px 22px;border-bottom:1px solid var(--hair);cursor:pointer}
+.food-item:active{background:var(--bg2)}
+.food-item.eaten .food-name{text-decoration:line-through;color:var(--muted)}
+.food-dot{width:5px;height:5px;border-radius:50%;background:var(--red);flex-shrink:0}
+.food-name{font-family:var(--serif-jp);font-size:15px;font-weight:500;flex:1}
+.food-sub{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.5px;margin-top:3px}
+.food-tag{font-family:var(--mono);font-size:8px;letter-spacing:1.5px;padding:3px 8px;background:var(--redL);color:var(--red);text-transform:uppercase;flex-shrink:0}
+.food-item.eaten .food-tag{background:var(--bg2);color:var(--muted)}
+.food-add{padding:14px 22px;border-top:1px solid var(--hair);background:var(--bg2)}
+
+/* ── LUGGAGE ── */
+.lug-item{display:flex;align-items:center;gap:10px;padding:12px 22px;border-bottom:1px solid var(--hair);cursor:pointer}
+.lug-item:active{background:var(--bg2)}
+.lug-box{width:18px;height:18px;border:1.5px solid var(--hair2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s}
+.lug-item.chk .lug-box{background:var(--red);border-color:var(--red)}
+.lug-tick{font-size:10px;color:var(--bg);display:none;font-weight:700}
+.lug-item.chk .lug-tick{display:block}
+.lug-label{font-family:var(--sans);font-size:14px;color:var(--ink);flex:1}
+.lug-item.chk .lug-label{text-decoration:line-through;color:var(--muted)}
+.lug-cat{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.lug-add{padding:14px 22px;border-top:1px solid var(--hair);background:var(--bg2);display:flex;gap:8px}
+
+/* ── BUDGET ── */
+.budget-total{padding:20px 22px 14px}
+.total-mono{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--red)}
+.total-amount{display:flex;align-items:baseline;gap:4px;margin-top:6px}
+.total-sym{font-family:var(--serif);font-size:22px;color:var(--muted);font-style:italic}
+.total-num{font-family:var(--serif);font-size:60px;font-weight:400;letter-spacing:-2px;line-height:1}
+.total-per{font-family:var(--serif);font-style:italic;font-size:14px;color:var(--muted);margin-top:8px}
+.settle-card{margin:0 22px 18px;background:var(--card);border:1px solid var(--hair);padding:20px}
+.settle-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.settle-mono{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted)}
+.settle-jp{font-family:var(--serif-jp);font-size:11px;color:var(--muted)}
+.settle-row{display:flex;align-items:baseline;gap:8px}
+.settle-from{font-family:var(--serif);font-style:italic;font-size:18px;color:var(--muted)}
+.settle-amt-big{font-family:var(--serif);font-size:34px;font-weight:400;letter-spacing:-1px;margin-left:auto}
+.settle-bar{display:flex;height:4px;margin-top:18px;gap:2px}
+.settle-ok{padding:16px;text-align:center;font-family:var(--serif-jp);font-size:15px;color:var(--red)}
+.exp-entries{padding:0 22px 28px}
+.entries-hdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.exp-item{display:flex;align-items:center;gap:14px;padding:14px 0;border-top:1px solid var(--hair)}
+.exp-item:last-child{border-bottom:1px solid var(--hair)}
+.exp-date{font-family:var(--mono);font-size:10px;color:var(--muted);flex-shrink:0;width:34px}
+.exp-name{font-family:var(--serif-jp);font-size:15px;font-weight:500;flex:1}
+.exp-meta{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:3px;text-transform:uppercase}
+.exp-amt{font-family:var(--serif);font-size:16px;font-weight:400;flex-shrink:0}
+.exp-controls{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.exp-sel{font-size:12px;padding:6px;border:1px solid var(--hair2);background:var(--card);color:var(--ink);font-family:var(--sans);width:100%}
+.exp-amt-inp{font-size:14px;padding:6px 8px;border:1px solid var(--hair2);background:var(--card);color:var(--ink);text-align:right;font-family:var(--serif);width:100%}
+.paid-row{display:flex;align-items:center;gap:10px;padding:12px 22px;border-bottom:1px solid var(--hair)}
+.paid-bar-wrap{flex:1;height:2px;background:var(--hair2);overflow:hidden}
+.paid-bar-fill{height:100%}
+.paid-name{font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--ink2);min-width:36px;text-transform:uppercase}
+.paid-paid{font-family:var(--serif);font-size:15px;min-width:60px;text-align:right}
+.paid-status{font-family:var(--mono);font-size:9px;letter-spacing:0.5px;min-width:80px;text-align:right}
+.budget-members{padding:16px 22px;border-bottom:1px solid var(--hair);display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+.m-card{display:flex;flex-direction:column;align-items:center;gap:4px}
+.m-av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700}
+.m-name{font-family:var(--mono);font-size:8px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+.m-add{border-radius:50%;border:1.5px dashed var(--hair2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:20px}
+.exp-add-form{padding:16px 22px;background:var(--bg2);border-top:2px solid var(--red)}
+.exp-add-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.currency-row{display:flex;align-items:center;gap:12px;padding:12px 22px;border-bottom:1px solid var(--hair)}
+.cur-label{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase}
+.cur-sel{font-size:13px;padding:6px 8px;border:1px solid var(--hair2);background:var(--card);color:var(--ink);font-family:var(--mono);flex:1}
+
+/* ── LOGIN ── */
+.login-screen{
+  position:fixed;inset:0;background:var(--ink);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:999;padding:40px 28px calc(env(safe-area-inset-bottom,0px)+32px);
+  gap:0;
+}
+.login-hanko{
+  width:56px;height:56px;background:var(--red);color:var(--bg);
+  border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--serif-jp);font-weight:700;font-size:28px;
+  transform:rotate(-4deg);margin-bottom:18px;
+}
+.login-wordmark{font-family:var(--serif);font-size:32px;color:var(--bg);letter-spacing:2px;font-style:italic;margin-bottom:4px}
+.login-sig{font-family:'Dancing Script','Brush Script MT',cursive;font-size:16px;color:#E87A5A;opacity:0.9;margin-bottom:6px}
+.login-tagline{font-family:var(--mono);font-size:8.5px;color:rgba(245,241,234,0.35);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:40px}
+.login-card{width:100%;max-width:340px;border:1px solid rgba(255,255,255,0.15);padding:28px 24px;border-radius:4px}
+.login-field-label{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:rgba(245,241,234,0.5);text-transform:uppercase;margin-bottom:8px;text-align:center}
+.login-inp{
+  width:100%;padding:16px;background:rgba(255,255,255,0.08);
+  border:1.5px solid rgba(255,255,255,0.35);
+  font-family:var(--mono);font-size:22px;font-weight:500;
+  color:#F5F1EA;letter-spacing:0.2em;text-align:center;text-transform:uppercase;
+  -webkit-appearance:none;margin-bottom:14px;
+}
+.login-inp::placeholder{color:rgba(240,235,227,0.2);font-size:12px;font-weight:400;text-transform:none;letter-spacing:0.05em}
+.login-inp:focus{outline:none;border-color:#E87A5A;box-shadow:0 0 0 2px rgba(181,70,42,0.3)}
+.login-inp.err{border-color:#E87A5A;animation:shake 0.35s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.login-btn{
+  width:100%;padding:15px;background:var(--red);border:none;
+  font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:2.5px;
+  text-transform:uppercase;color:var(--bg);cursor:pointer;
+}
+.login-btn:active{background:var(--redD)}
+.login-btn.loading{opacity:0.6;pointer-events:none}
+.login-err{font-family:var(--mono);font-size:9px;color:var(--red);text-align:center;margin-top:10px;min-height:18px;letter-spacing:0.5px}
+.login-demo-btn{display:block;width:100%;text-align:center;margin-top:14px;font-family:var(--mono);font-size:9px;color:rgba(245,241,234,0.4);background:none;border:none;cursor:pointer;letter-spacing:1.5px;text-decoration:underline;text-transform:uppercase;padding:4px}
+.login-footer{margin-top:24px;font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;opacity:0.5;text-align:center}
+
+/* ── ICONS (inline SVG helper) ── */
+.ico{display:block;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="shell" id="shell">
+
+  <!-- LOGIN -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-hanko">旅</div>
+    <div class="login-wordmark">WanderPlan</div>
+    <div class="login-sig">CheungKinFai Idea</div>
+    <div class="login-tagline">Travel Planning · 旅游规划</div>
+    <div class="login-card">
+      <div class="login-field-label">邀请码 · Invite Code</div>
+      <input class="login-inp" id="inviteInput" maxlength="12"
+        placeholder="e.g. ALEX2026"
+        onkeydown="if(event.key==='Enter')doLogin()"
+        oninput="this.value=this.value.toUpperCase();document.getElementById('loginErrMsg').textContent=''">
+      <button class="login-btn" id="loginBtn2" onclick="doLogin()">入场 · Enter</button>
+      <div class="login-err" id="loginErrMsg"></div>
+      <button class="login-demo-btn" onclick="doDemo()">体验 Demo · Try Demo</button>
+      <button class="login-demo-btn" style="margin-top:6px;font-size:8px;opacity:0.3" onclick="clearStorage()">清除缓存 · Clear cache</button>
+    </div>
+    <div class="login-footer">v1.1 · 京都和纸</div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div class="sb"></div>
+
+  <!-- TOP CHROME -->
+  <div class="chrome">
+    <div class="logo-wrap">
+      <div class="hanko">旅</div>
+      <div>
+        <div class="logo-name">WanderPlan</div>
+        <div class="logo-sub">EST. 二〇二六</div>
+      </div>
+    </div>
+    <div class="chrome-right">
+      <div class="sync-pip offline" id="syncPip" style="display:none"></div>
+      <div class="user-pill" id="userBadge" onclick="logout()" style="display:none">
+        <div class="user-pip" id="userPip">?</div>
+        <span class="user-nm" id="userNm">--</span>
+      </div>
+      <button class="lang-pill" id="langBtn" onclick="toggleLang()">EN</button>
+    </div>
+  </div>
+
+  <!-- DEST CHIPS -->
+  <div class="dest-scroll" id="destChips"></div>
+
+  <!-- BODY -->
+  <div class="body" id="bd"></div>
+
+  <!-- TAB BAR -->
+  <div class="tabbar" id="tabbar"></div>
+
+</div>
+
+<!-- PICKER OVERLAY -->
+<div class="picker-overlay" id="pickerOverlay" style="display:none" onclick="if(event.target===this)closePicker()">
+  <div class="picker-sheet">
+    <div class="picker-hdr">
+      <div>
+        <div class="picker-ttl" id="pickerTitle">景点選択</div>
+        <div class="picker-sub" id="pickerSub"></div>
+      </div>
+      <button class="picker-close" onclick="closePicker()">&#xD7;</button>
+    </div>
+    <div class="picker-list" id="pickerList"></div>
+    <div class="picker-ftr">
+      <button class="btn-red" id="pickerSaveBtn" onclick="savePicker()">确认</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+// ============ LANG ============
+var LANG='zh';
+var I18N={
+  appTitle:{zh:'规划更聪明，旅行更自在',en:'Plan smarter, travel freer'},
+  heroMain:{zh:'规划更聪明，',en:'Plan smarter, '},
+  heroEm:{zh:'旅行更自在',en:'travel freer'},
+  overview:{zh:'总览',en:'Overview'},
+  places:{zh:'景点',en:'Places'},
+  schedule:{zh:'行程',en:'Schedule'},
+  stay:{zh:'住宿',en:'Stay'},
+  transport:{zh:'交通',en:'Transport'},
+  food:{zh:'餐饮',en:'Food'},
+  luggage:{zh:'行李',en:'Luggage'},
+  budget:{zh:'账单',en:'Budget'},
+  addDest:{zh:'+ 新增目的地',en:'+ Add destination'},
+  planning:{zh:'规划步骤',en:'Planning Steps'},
+  step1:{zh:'设定旅行日期',en:'Set travel dates'},
+  step2:{zh:'添加景点',en:'Add places'},
+  step3:{zh:'添加住宿',en:'Add hotels'},
+  step4:{zh:'添加交通',en:'Add transport'},
+  step5:{zh:'安排行程',en:'Plan schedule'},
+  step6:{zh:'找好餐厅',en:'Find restaurants'},
+  goSet:{zh:'去设置',en:'Set now'},
+  goAdd:{zh:'去添加',en:'Add now'},
+  goPlaces:{zh:'去景点',en:'Places tab'},
+  goStay:{zh:'去住宿',en:'Stay tab'},
+  goTransport:{zh:'去交通',en:'Transport tab'},
+  goSchedule:{zh:'去行程',en:'Schedule tab'},
+  goFood:{zh:'去餐饮',en:'Food tab'},
+  nights:{zh:'晚',en:'nights'},
+  progress:{zh:'行程进度',en:'Progress'},
+  destination:{zh:'目的地',en:'Dest.'},
+  visited:{zh:'已游览',en:'visited'},
+  eaten:{zh:'已去',en:'eaten'},
+  placesLabel:{zh:'景点',en:'Places'},
+  addPlace:{zh:'添加景点',en:'Add place'},
+  placeName:{zh:'景点名称',en:'Place name'},
+  placeNamePH:{zh:'e.g. 武侯寺',en:'e.g. Wuhou Temple'},
+  placeEn:{zh:'英文名',en:'Chinese name'},
+  area:{zh:'区域',en:'Area'},
+  distFrom:{zh:'距离基于',en:'Distance from'},
+  tapVisit:{zh:'点击标记已游览',en:'Tap to mark visited'},
+  hotelLabel:{zh:'住宿',en:'Accommodation'},
+  addHotel:{zh:'添加酒店',en:'Add hotel'},
+  hotelName:{zh:'酒店名称',en:'Hotel name'},
+  hotelEn:{zh:'英文名',en:'Chinese name'},
+  checkin:{zh:'入住日期',en:'Check-in'},
+  checkout:{zh:'退房日期',en:'Check-out'},
+  hotelInfo:{zh:'📅 填入住/退房日期后，行程每日自动显示对应酒店',en:'📅 Enter check-in/checkout dates — schedule will auto-show each night\'s hotel'},
+  hotelOverlapWarn:{zh:'⚠️ 此酒店日期与其他酒店重叠，请检查',en:'⚠️ These dates overlap with another hotel. Please check.'},
+  noHotel:{zh:'未添加酒店',en:'No hotels added yet'},
+  noHotelChip:{zh:'未设酒店',en:'No hotel set'},
+  transportLabel:{zh:'交通',en:'Transport'},
+  addTransport:{zh:'添加交通',en:'Add transport'},
+  transportType:{zh:'交通类型',en:'Type'},
+  transportName:{zh:'名称',en:'Name'},
+  transportNamePH:{zh:'e.g. 去程机票',en:'e.g. Outbound Flight'},
+  transportDetail:{zh:'详情',en:'Detail'},
+  transportDetailPH:{zh:'e.g. HKG→CTU · CX123',en:'e.g. HKG→CTU · CX123'},
+  transportDate:{zh:'日期',en:'Date'},
+  transportCost:{zh:'费用',en:'Cost'},
+  noTransport:{zh:'未添加交通',en:'No transport added'},
+  foodLabel:{zh:'餐厅',en:'Restaurants'},
+  addFood:{zh:'添加餐厅',en:'Add restaurant'},
+  foodName:{zh:'餐厅名称',en:'Restaurant name'},
+  foodEn:{zh:'英文名',en:'Chinese name'},
+  foodLoc:{zh:'位置',en:'Location'},
+  noFood:{zh:'未添加餐厅',en:'No restaurants added'},
+  checkedBags:{zh:'托运行李',en:'Checked bags'},
+  handCarry:{zh:'随身行李',en:'Hand carry'},
+  addItem:{zh:'添加物品',en:'Add item'},
+  members:{zh:'旅伴',en:'Members'},
+  addMember:{zh:'添加',en:'Add'},
+  expenses:{zh:'费用记录',en:'Expenses'},
+  expItem:{zh:'项目',en:'Item'},
+  expAmt:{zh:'金额',en:'Amount'},
+  expPaidBy:{zh:'谁付',en:'Paid by'},
+  expSplit:{zh:'摊给',en:'Split'},
+  splitAll:{zh:'平摊',en:'All'},
+  whoPaid:{zh:'各人付款',en:'Who paid'},
+  settleUp:{zh:'结算',en:'Settle up'},
+  getsBack:{zh:'可收',en:'Gets'},
+  owes:{zh:'应付',en:'Owes'},
+  settled:{zh:'已平',en:'OK'},
+  settledAll:{zh:'所有人已平衡！',en:'Everyone settled!'},
+  transferNote:{zh:'完成以上转账后账目清零',en:'Complete transfers to settle all balances'},
+  pays:{zh:'转账给',en:'pays'},
+  totalCost:{zh:'总旅费',en:'Total cost'},
+  currency:{zh:'币种',en:'Currency'},
+  selectPlaces:{zh:'选择景点',en:'Select places'},
+  confirm:{zh:'确认',en:'Confirm'},
+  setDates:{zh:'设定日期',en:'Set Dates'},
+  confirmDates:{zh:'确认日期',en:'Confirm Dates'},
+  changeDates:{zh:'修改日期',en:'Change Dates'},
+  editDates:{zh:'修改旅行日期',en:'Edit Travel Dates'},
+  noDateRange:{zh:'尚未设置旅行日期',en:'Travel dates not set yet'},
+  startDate:{zh:'开始日期',en:'Start date'},
+  endDate:{zh:'结束日期',en:'End date'},
+  noPlaces:{zh:'暂无景点',en:'No places yet'},
+  removeDest:{zh:'删除目的地？',en:'Remove this destination?'},
+  day:{zh:'第',en:'Day '},
+  dayUnit:{zh:'天',en:''},
+  required:{zh:'此项必填',en:'This field is required'},
+  ttype_flight:{zh:'✈️ 机票',en:'✈️ Flight'},
+  ttype_train:{zh:'🚄 火车',en:'🚄 Train'},
+  ttype_bus:{zh:'🚌 巴士',en:'🚌 Bus'},
+  ttype_ferry:{zh:'⛴️ 渡轮',en:'⛴️ Ferry'},
+  ttype_rental:{zh:'🚗 租车',en:'🚗 Car rental'},
+  ttype_rideshare:{zh:'🚕 滴滴/Uber',en:'🚕 DiDi/Uber'},
+  ttype_other:{zh:'🚐 其他',en:'🚐 Other'},
+  todayDefault:{zh:'（默认今天）',en:'(default today)'},
+};
+function L(key){var v=I18N[key];if(!v)return key;return typeof v==='string'?v:(v[LANG]||v.zh||'');}
+function toggleLang(){
+  LANG=LANG==='zh'?'en':'zh';
+  document.getElementById('langBtn').textContent=LANG==='zh'?'EN':'中文';
+  var ht=document.getElementById('heroTitle');
+  if(ht)ht.innerHTML=L('heroMain')+'<em>'+L('heroEm')+'</em>';
+  try{localStorage.setItem('wp4_lang',LANG);}catch(e){}
+  renderAll();
+}
+
+// ============ DATA ============
+var AVC=[{bg:'#E1F5EE',tx:'#085041'},{bg:'#EEEDFE',tx:'#3C3489'},{bg:'#FAECE7',tx:'#993C1D'},{bg:'#E6F1FB',tx:'#0C447C'},{bg:'#FAEEDA',tx:'#633806'},{bg:'#FBEAF0',tx:'#72243E'}];
+var TICONS={flight:'✈️',train:'🚄',bus:'🚌',ferry:'⛴️',rental:'🚗',rideshare:'🚕',other:'🚐'};
+var CURRENCIES=['HKD','CNY','AUD','USD','EUR','GBP','JPY','SGD'];
+
+var dests={
+  chengdu:{
+    id:'chengdu',cn:'成都',en:'Chengdu',start:'2026-04-16',end:'2026-04-20',currency:'CNY',
+    hotels:[{id:'h1',cn:'丽橙酒店',en:'Licheng Hotel',checkin:'2026-04-16',checkout:'2026-04-20'}],
+    places:[
+      {id:'p1',cn:'武侯寺',en:'Wuhou Temple',area:'武侯区',kh:1.2,ka:49,mode:'walk',min:15,done:false},
+      {id:'p2',cn:'锦里古街',en:'Jinli Street',area:'武侯区',kh:1.3,ka:49,mode:'walk',min:16,done:false},
+      {id:'p3',cn:'大熊猫繁育基地',en:'Giant Panda Base',area:'成华区',kh:11.5,ka:55,mode:'taxi',min:30,done:false},
+      {id:'p4',cn:'成都博物馆',en:'Chengdu Museum',area:'青羊区',kh:4.2,ka:51,mode:'metro',min:16,done:false},
+      {id:'p5',cn:'宽窄巷',en:'Wide & Narrow Alleys',area:'青羊区',kh:2.2,ka:50,mode:'walk',min:28,done:false},
+      {id:'p6',cn:'春熙路+太古里',en:'Chunxi Rd + Taikoo Li',area:'锦江区',kh:5.8,ka:52,mode:'metro',min:22,done:false},
+      {id:'p7',cn:'九眼桥夜景',en:'Jiuyan Bridge Night',area:'锦江区',kh:5.2,ka:52,mode:'taxi',min:18,done:false},
+      {id:'p8',cn:'川剧表演',en:'Sichuan Opera',area:'青羊区',kh:2.5,ka:50,mode:'walk',min:30,done:false}
+    ],
+    schedule:[
+      {date:'2026-04-16',placeIds:['p1','p2']},
+      {date:'2026-04-17',placeIds:['p3','p5']},
+      {date:'2026-04-18',placeIds:['p4','p6']},
+      {date:'2026-04-19',placeIds:['p7','p8']}
+    ],
+    transport:[
+      {id:'t1',type:'flight',cn:'去程机票',en:'Outbound Flight',detail:'HKG→CTU',date:'2026-04-16',cost:2683},
+      {id:'t2',type:'flight',cn:'回程机票',en:'Return Flight',detail:'CTU→HKG',date:'2026-04-20',cost:2683}
+    ],
+    restaurants:[
+      {id:'r1',cn:'锅贴、抄手',en:'Guotie & Wonton',loc:'武侯区',tag:'必试',eaten:false},
+      {id:'r2',cn:'清汤火锅',en:'Clear Broth Hotpot',loc:'',tag:'必试',eaten:false},
+      {id:'r3',cn:'川菜清淡款',en:'Light Sichuan',loc:'',tag:'日常',eaten:false}
+    ],
+    expenses:[
+      {id:1,cat:'f',cn:'去程机票',en:'Outbound Flight',amount:2683,payer:'A',split:'all'},
+      {id:2,cat:'f',cn:'回程机票',en:'Return Flight',amount:2683,payer:'A',split:'all'},
+      {id:3,cat:'h',cn:'丽橙酒店 4晚',en:'Licheng Hotel 4n',amount:1562,payer:'A',split:'all'},
+      {id:4,cat:'t',cn:'熊猫基地门票',en:'Panda Base ticket',amount:230,payer:'B',split:'all'},
+      {id:5,cat:'m',cn:'餐饮',en:'Dining',amount:400,payer:'C',split:'all'},
+      {id:6,cat:'x',cn:'地铁+滴滴',en:'Metro+DiDi',amount:299,payer:'B',split:'all'}
+    ]
+  }
+};
+var luggage={
+  checked:[
+    {l:{zh:'洗头水',en:'Shampoo'},c:'洗漱'},{l:{zh:'牙膏',en:'Toothpaste'},c:'洗漱'},
+    {l:{zh:'洗漱袋',en:'Toiletries bag'},c:'洗漱'},{l:{zh:'风筒',en:'Hair dryer'},c:'电器'},
+    {l:{zh:'转换器',en:'Converter'},c:'电器'},{l:{zh:'拖鞋',en:'Slippers'},c:'衣物'},
+    {l:{zh:'衣架',en:'Hangers'},c:'杂物'},{l:{zh:'鞋垫 x7',en:'Insoles x7'},c:'衣物'}
+  ],
+  carry:[
+    {l:{zh:'手提电脑',en:'Laptop'},c:'电子'},{l:{zh:'相机袋',en:'Camera bag'},c:'电子'},
+    {l:{zh:'相机',en:'Camera'},c:'电子'},{l:{zh:'镜头',en:'Lens'},c:'电子'},
+    {l:{zh:'尿袋',en:'Power bank'},c:'电子'},{l:{zh:'手机',en:'Phone'},c:'电子'},
+    {l:{zh:'硬盘 x2',en:'Hard drive x2'},c:'电子'},{l:{zh:'无人机',en:'DJI Drone'},c:'电子'},
+    {l:{zh:'稳定器',en:'Osmo'},c:'电子'}
+  ]
+};
+var members=[{id:'A',name:'Alex',col:AVC[0]},{id:'B',name:'Blake',col:AVC[1]},{id:'C',name:'Casey',col:AVC[2]}];
+var S={dest:'chengdu',tab:'overview',doneItems:{},doneLug:{},expNextId:50,pickerDay:null,pickerSel:[]};
+
+// ============ PERSIST ============
+// save() is now defined in INVITE CODE SYSTEM above
+// load() replaced by localLoad() in INVITE CODE SYSTEM
+
+// ============ HELPERS ============
+function D(){return dests[S.dest]||{};}
+function pn(p){return LANG==='zh'?p.cn:p.en;}
+function hn(h){return LANG==='zh'?h.cn:(h.en||h.cn);}
+function tn(t){return LANG==='zh'?t.cn:(t.en||t.cn);}
+function lln(item){var l=item.l;return typeof l==='string'?l:(l[LANG]||l.zh);}
+function fmtDate(ds){if(!ds)return'--';var d=new Date(ds+'T12:00:00');return d.toLocaleDateString(LANG==='zh'?'zh-CN':'en-GB',{month:'short',day:'numeric'});}
+function fmtDateLong(ds){if(!ds)return'';var d=new Date(ds+'T12:00:00');return d.toLocaleDateString(LANG==='zh'?'zh-CN':'en-GB',{month:'long',day:'numeric',weekday:'long'});}
+function nightsBetween(a,b){if(!a||!b)return 0;return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000);}
+function todayStr(){return new Date().toISOString().slice(0,10);}
+function avEl(m,sz){sz=sz||36;return '<div class="mav" style="width:'+sz+'px;height:'+sz+'px;font-size:'+Math.round(sz*.36)+'px;background:'+m.col.bg+';color:'+m.col.tx+'">'+m.name.slice(0,2).toUpperCase()+'</div>';}
+function catPill(c){var cls={f:'cp-f',h:'cp-h',m:'cp-m',t:'cp-t',x:'cp-x'};var ico={f:'✈️',h:'🏨',m:'🍜',t:'🎟️',x:'🚇'};return'<span class="cat-pill '+(cls[c]||'cp-x')+'">'+(ico[c]||c)+'</span>';}
+function hotelForDate(dateStr){
+  var d=D();if(!d.hotels)return null;
+  return d.hotels.find(function(h){return h.checkin&&h.checkout&&dateStr>=h.checkin&&dateStr<h.checkout;})||null;
+}
+// Returns ALL hotels covering a date (handles rare multi-hotel same day)
+function hotelsForDate(dateStr){
+  var d=D();if(!d.hotels)return[];
+  return d.hotels.filter(function(h){return h.checkin&&h.checkout&&dateStr>=h.checkin&&dateStr<h.checkout;});
+}
+function hotelsOverlap(hotels){
+  for(var i=0;i<hotels.length;i++){
+    for(var j=i+1;j<hotels.length;j++){
+      var a=hotels[i],b=hotels[j];
+      if(!a.checkin||!a.checkout||!b.checkin||!b.checkout)continue;
+      if(a.checkin<b.checkout&&b.checkin<a.checkout)return true;
+    }
+  }
+  return false;
+}
+function getCurrency(){return D().currency||'CNY';}
+
+// ============ NAV ============
+var TAB_KEYS=['overview','places','schedule','stay','transport','food','luggage','budget'];
+function selT(key){
+  S.tab=key;
+  renderTabs();
+  render();
+}
+function selD(k){S.dest=k;save();renderChips();renderTabs();render();}
+function addDest(){
+  var cn=prompt(LANG==='zh'?'目的地名称（中文）：':'Destination name:');
+  if(!cn||!cn.trim())return;
+  var en=prompt(LANG==='zh'?'英文名（可选）：':'English name (optional):');
+  var id='dest_'+Date.now();
+  dests[id]={id:id,cn:cn.trim(),en:(en||cn).trim(),start:'',end:'',currency:'CNY',hotels:[],places:[],schedule:[],transport:[],restaurants:[],expenses:[]};
+  S.dest=id;save();renderAll();
+}
+function delDest(id,e){
+  e.stopPropagation();
+  if(!confirm(L('removeDest')))return;
+  delete dests[id];
+  var k=Object.keys(dests);S.dest=k.length?k[0]:'';
+  save();renderAll();
+}
+
+// ============ PLACES ============
+function tglPlace(id){var p=D().places.find(function(x){return x.id===id;});if(p){p.done=!p.done;save();render();}}
+function delPlace(id,e){
+  e.stopPropagation();
+  var d=D();
+  d.places=d.places.filter(function(p){return p.id!==id;});
+  d.schedule.forEach(function(day){day.placeIds=day.placeIds.filter(function(pid){return pid!==id;});});
+  save();render();
+}
+function addPlace(){
+  var cn=document.getElementById('pcn');
+  var val=cn.value.trim();
+  if(!val){cn.classList.add('err');return;}
+  cn.classList.remove('err');
+  var en=document.getElementById('pen').value.trim();
+  var area=document.getElementById('parea').value.trim();
+  var id='p_'+Date.now();
+  D().places.push({id:id,cn:val,en:en||val,area:area,kh:0,ka:0,mode:'walk',min:0,done:false});
+  cn.value='';document.getElementById('pen').value='';document.getElementById('parea').value='';
+  save();render();
+}
+
+// ============ SCHEDULE ============
+function buildDays(){
+  var d=D();if(!d.start||!d.end)return[];
+  var days=[],cur=new Date(d.start+'T12:00:00'),end=new Date(d.end+'T12:00:00');
+  while(cur<end){
+    var ds=cur.toISOString().slice(0,10);
+    var ex=d.schedule.find(function(s){return s.date===ds;});
+    if(!ex){ex={date:ds,placeIds:[]};d.schedule.push(ex);}
+    days.push(ex);cur.setDate(cur.getDate()+1);
+  }
+  return days;
+}
+function setDates(){
+  var s=document.getElementById('dstart').value,e=document.getElementById('dend').value;
+  var se=document.getElementById('dstart'),ee=document.getElementById('dend');
+  se.classList.remove('err');ee.classList.remove('err');
+  var ok=true;
+  if(!s){se.classList.add('err');ok=false;}
+  if(!e){ee.classList.add('err');ok=false;}
+  if(!ok)return;
+  if(s>=e){alert(LANG==='zh'?'结束日期必须晚于开始日期':'End must be after start');return;}
+  D().start=s;D().end=e;save();render();
+}
+function openPicker(date){
+  S.pickerDay=date;
+  var day=D().schedule.find(function(s){return s.date===date;});
+  S.pickerSel=day?day.placeIds.slice():[];
+  var d=new Date(date+'T12:00:00');
+  var label=d.toLocaleDateString(LANG==='zh'?'zh-CN':'en-GB',{month:'long',day:'numeric',weekday:'short'});
+  document.getElementById('pickerTitle').textContent=L('selectPlaces')+' · '+label;
+  document.getElementById('pickerSub').textContent=LANG==='zh'?'选好后点确认':'Select then tap Confirm';
+  document.getElementById('pickerSaveBtn').textContent=L('confirm');
+  renderPickerList();
+  document.getElementById('pickerOverlay').style.display='flex';
+}
+function renderPickerList(){
+  var places=D().places;
+  var html=places.map(function(p){
+    var sel=S.pickerSel.indexOf(p.id)>=0;
+    var name=pn(p);var sub=(LANG==='zh'?p.en:p.cn)+(p.area?' · '+p.area:'');
+    var dist=p.kh>0?(p.kh+'km · ~'+p.min+'min'):'';
+    return '<div class="picker-item'+(sel?' sel':'')+'" onclick="tglPicker(\''+p.id+'\')">'
+      +'<div class="pi-check"><span class="pi-tick">&#x2713;</span></div>'
+      +'<div style="flex:1"><div class="pi-name">'+name+'</div><div class="pi-sub">'+sub+'</div></div>'
+      +(dist?'<div class="pi-dist">'+dist+'</div>':'')
+      +'</div>';
+  }).join('');
+  if(!html)html='<div style="padding:28px;text-align:center;color:var(--tx3);font-size:15px">'+(LANG==='zh'?'请先在「景点」页添加景点':'Add places in the Places tab first')+'</div>';
+  document.getElementById('pickerList').innerHTML=html;
+}
+function tglPicker(id){var idx=S.pickerSel.indexOf(id);if(idx>=0)S.pickerSel.splice(idx,1);else S.pickerSel.push(id);renderPickerList();}
+function savePicker(){
+  var day=D().schedule.find(function(s){return s.date===S.pickerDay;});
+  if(day)day.placeIds=S.pickerSel.slice();
+  save();render();
+  document.getElementById('pickerOverlay').style.display='none';
+}
+function closePicker(){document.getElementById('pickerOverlay').style.display='none';}
+function tglSchedItem(date,pid){var k='sc_'+date+'_'+pid;S.doneItems[k]=!S.doneItems[k];save();render();}
+function removeFromDay(date,pid,e){e.stopPropagation();var day=D().schedule.find(function(s){return s.date===date;});if(day)day.placeIds=day.placeIds.filter(function(p){return p!==pid;});save();render();}
+
+// ============ HOTELS ============
+function addHotel(){
+  var cn=document.getElementById('hcn');
+  var ciEl=document.getElementById('hci');
+  var coEl=document.getElementById('hco');
+  cn.classList.remove('err');ciEl.classList.remove('err');coEl.classList.remove('err');
+  var ok=true;
+  if(!cn.value.trim()){cn.classList.add('err');ok=false;}
+  var ci=ciEl.value;var co=coEl.value;
+  // ---- Rule: checkout must be after checkin ----
+  if(ci&&co&&co<=ci){
+    coEl.classList.add('err');
+    alert(LANG==='zh'?'退房日期必须晚于入住日期':'Check-out must be after check-in');
+    return;
+  }
+  if(!ok)return;
+  var en=document.getElementById('hen').value.trim();
+  var id='h_'+Date.now();
+  var newH={id:id,cn:cn.value.trim(),en:en||cn.value.trim(),checkin:ci,checkout:co};
+  var d=D();
+  var testHotels=d.hotels.concat([newH]);
+  if(hotelsOverlap(testHotels)){
+    if(!confirm(L('hotelOverlapWarn')+'\n\n'+(LANG==='zh'?'是否仍要添加？':'Add anyway?')))return;
+  }
+  d.hotels.push(newH);
+  cn.value='';document.getElementById('hen').value='';
+  ciEl.value='';coEl.value='';
+  save();render();
+}
+function delHotel(id,e){e.stopPropagation();D().hotels=D().hotels.filter(function(h){return h.id!==id;});save();render();}
+
+// ============ TRANSPORT ============
+function tpTypeChanged(){
+  var type=document.getElementById('ttype').value;
+  var dateRow=document.getElementById('tdate_row');
+  if(type==='flight'){
+    dateRow.style.opacity='1';
+    document.getElementById('tdate').placeholder='';
+  } else {
+    dateRow.style.opacity='1';
+    if(!document.getElementById('tdate').value)
+      document.getElementById('tdate').value=todayStr();
+  }
+}
+function addTransport(){
+  var cn=document.getElementById('tcn');
+  if(!cn.value.trim()){cn.classList.add('err');return;}
+  cn.classList.remove('err');
+  var type=document.getElementById('ttype').value;
+  var detail=document.getElementById('tdetail').value.trim();
+  var date=document.getElementById('tdate').value||(type!=='flight'?todayStr():'');
+  var cost=parseFloat(document.getElementById('tcost').value)||0;
+  var id='t_'+Date.now();
+  D().transport.push({id:id,type:type,cn:cn.value.trim(),en:cn.value.trim(),detail:detail,date:date,cost:cost});
+  cn.value='';document.getElementById('tdetail').value='';
+  document.getElementById('tdate').value='';document.getElementById('tcost').value='';
+  save();render();
+}
+function delTransport(id,e){e.stopPropagation();D().transport=D().transport.filter(function(t){return t.id!==id;});save();render();}
+
+// ============ FOOD ============
+function tglFood(id){var r=D().restaurants.find(function(x){return x.id===id;});if(r){r.eaten=!r.eaten;save();render();}}
+function delFood(id,e){e.stopPropagation();D().restaurants=D().restaurants.filter(function(r){return r.id!==id;});save();render();}
+function addFood(){
+  var cn=document.getElementById('fcn');
+  if(!cn.value.trim()){cn.classList.add('err');return;}
+  cn.classList.remove('err');
+  var en=document.getElementById('fen').value.trim();
+  var loc=document.getElementById('floc').value.trim();
+  var id='r_'+Date.now();
+  D().restaurants.push({id:id,cn:cn.value.trim(),en:en||cn.value.trim(),loc:loc,tag:'',eaten:false});
+  cn.value='';document.getElementById('fen').value='';document.getElementById('floc').value='';
+  save();render();
+}
+
+// ============ LUGGAGE ============
+function tglLug(t,i){S.doneLug[t+'_'+i]=!S.doneLug[t+'_'+i];save();render();}
+function delLug(t,i,e){e.stopPropagation();luggage[t].splice(i,1);delete S.doneLug[t+'_'+i];save();render();}
+function addLug(type){
+  var n=document.getElementById('li_'+type);
+  if(!n.value.trim()){n.classList.add('err');return;}
+  n.classList.remove('err');
+  var c=document.getElementById('lc_'+type).value;
+  luggage[type].push({l:{zh:n.value.trim(),en:n.value.trim()},c:c});
+  n.value='';save();render();
+}
+
+// ============ BUDGET ============
+function setCurrency(v){D().currency=v;save();render();}
+function calcBal(){
+  var bal={};members.forEach(function(m){bal[m.id]=0;});
+  D().expenses.forEach(function(e){
+    var sm=e.split==='all'?members.map(function(m){return m.id;}):[e.split];
+    var sh=e.amount/sm.length;
+    bal[e.payer]=(bal[e.payer]||0)+e.amount;
+    sm.forEach(function(id){bal[id]=(bal[id]||0)-sh;});
+  });
+  return bal;
+}
+function calcSettle(bal){
+  var pos=[],neg=[];
+  Object.keys(bal).forEach(function(id){
+    var v=bal[id];var m=members.find(function(m){return m.id===id;});if(!m)return;
+    if(v>0.5)pos.push({name:m.name,col:m.col,amt:v});
+    else if(v<-0.5)neg.push({name:m.name,col:m.col,amt:-v});
+  });
+  var txns=[],pp=pos.map(function(x){return{name:x.name,col:x.col,amt:x.amt};}),nn=neg.map(function(x){return{name:x.name,col:x.col,amt:x.amt};});
+  while(pp.length&&nn.length){var g=nn[0],r=pp[0],a=Math.min(g.amt,r.amt);txns.push({from:g,to:r,amt:a});g.amt-=a;r.amt-=a;if(g.amt<0.5)nn.shift();if(r.amt<0.5)pp.shift();}
+  return txns;
+}
+function chgPayer(id,v){var e=D().expenses.find(function(e){return e.id===id;});if(e)e.payer=v;save();render();}
+function chgSplit(id,v){var e=D().expenses.find(function(e){return e.id===id;});if(e)e.split=v;save();render();}
+function chgAmt(id,v){var e=D().expenses.find(function(e){return e.id===id;});if(e)e.amount=parseFloat(v)||0;save();render();}
+function delExp(id){D().expenses=D().expenses.filter(function(e){return e.id!==id;});save();render();}
+function addExp(){
+  var cn=document.getElementById('en');
+  var amt=document.getElementById('ea');
+  cn.classList.remove('err');amt.classList.remove('err');
+  var ok=true;
+  if(!cn.value.trim()){cn.classList.add('err');ok=false;}
+  if(!parseFloat(amt.value)){amt.classList.add('err');ok=false;}
+  if(!ok)return;
+  var p=document.getElementById('ep').value;
+  var sp=document.getElementById('es').value;
+  var c=document.getElementById('ec').value;
+  D().expenses.push({id:S.expNextId++,cat:c,cn:cn.value.trim(),en:cn.value.trim(),amount:parseFloat(amt.value),payer:p,split:sp});
+  cn.value='';amt.value='';save();render();
+}
+function addMember(){
+  if(members.length>=6)return;
+  var n=prompt(LANG==='zh'?'旅伴名字：':'Member name:');
+  if(!n||!n.trim())return;
+  members.push({id:n.trim().slice(0,2).toUpperCase(),name:n.trim(),col:AVC[members.length]});
+  save();render();
+}
+
+
+// ============ INVITE CODE SYSTEM ============
+// ---- Config: define your invite codes here ----
+// Format: CODE -> { name, color, feishuSheetId (fill in later) }
+var INVITE_CODES = {
+  'DEMO':    { name:'Demo',   initials:'D',  color:'#1D9E75', feishuSheet: null },
+  'ALEX2026':{ name:'Alex',   initials:'AL', color:'#534AB7', feishuSheet: null },
+  'BLAKE':   { name:'Blake',  initials:'BL', color:'#D85A30', feishuSheet: null },
+  'CASEY':   { name:'Casey',  initials:'CA', color:'#BA7517', feishuSheet: null },
+  // Add more codes here when needed
+  // 'MIKE2026': { name:'Mike', initials:'MI', color:'#185FA5', feishuSheet: null },
+};
+
+// ---- Feishu config (fill in after you register) ----
+var FEISHU_CONFIG = {
+  app_id:     '',          // e.g. 'cli_xxxxxx'
+  app_secret: '',          // e.g. 'xxxxxxxxxxxxxxxx'
+  spreadsheet_token: '',   // e.g. 'shtcnxxxxxxxxxxxxxx'
+  // Each invite code maps to one sheet in the same spreadsheet
+};
+
+var currentUser = null;  // { code, name, initials, color, feishuSheet }
+var syncStatus = 'offline'; // 'synced' | 'syncing' | 'offline'
+var syncTimer = null;
+
+// ---- LOGIN ----
+function doLogin() {
+  var input = document.getElementById('inviteInput');
+  var code = input.value.trim().toUpperCase();
+  var errEl = document.getElementById('loginErrMsg');
+  var btnEl = document.getElementById('loginBtn2');
+
+  if (!code) {
+    input.classList.add('err');
+    setTimeout(function(){ input.classList.remove('err'); }, 400);
+    errEl.textContent = LANG === 'zh' ? '请输入邀请码' : 'Please enter your invite code';
+    return;
+  }
+
+  if (!INVITE_CODES[code]) {
+    input.classList.add('err');
+    setTimeout(function(){ input.classList.remove('err'); }, 400);
+    errEl.textContent = LANG === 'zh' ? '邀请码无效，请检查' : 'Invalid invite code, please check';
+    input.select();
+    return;
+  }
+
+  // Valid code
+  currentUser = Object.assign({ code: code }, INVITE_CODES[code]);
+  btnEl.classList.add('loading');
+  S.tab = 'overview';
+
+  // Try to load from Feishu cloud first; fall back to localStorage
+  loadUserData(function() {
+    btnEl.classList.remove('loading');
+    document.getElementById('loginScreen').style.display = 'none';
+    updateUserBadge();
+    updateSyncIndicator('synced');
+    try { localStorage.setItem('wp4_lastCode', code); } catch(e) {}
+    S.tab = 'overview';
+    renderAll();
+  });
+}
+
+function doDemo() {
+  document.getElementById('inviteInput').value = 'DEMO';
+  doLogin();
+}
+
+// ---- LOAD USER DATA ----
+function loadUserData(callback) {
+  // Phase 1: try Feishu cloud
+  if (FEISHU_CONFIG.app_id && currentUser.feishuSheet) {
+    updateSyncIndicator('syncing');
+    feishuLoad(function(cloudData) {
+      if (cloudData) {
+        // Cloud data wins — load it
+        try {
+          if (cloudData.dests) dests = cloudData.dests;
+          if (cloudData.luggage) luggage = cloudData.luggage;
+          if (cloudData.members) members = cloudData.members;
+          // Mirror to localStorage as cache
+          localSave();
+        } catch(e) {}
+        updateSyncIndicator('synced');
+      } else {
+        // Cloud empty/error: fall back to localStorage
+        localLoad();
+        updateSyncIndicator('offline');
+      }
+      if (callback) callback();
+    });
+  } else {
+    // No Feishu yet: use localStorage only
+    localLoad();
+    updateSyncIndicator('offline');
+    if (callback) callback();
+  }
+}
+
+// ---- LOCAL STORAGE (namespaced by invite code) ----
+function localKey(k) {
+  return 'wp4_' + (currentUser ? currentUser.code : 'DEMO') + '_' + k;
+}
+function localSave() {
+  try {
+    localStorage.setItem(localKey('d'), JSON.stringify(dests));
+    localStorage.setItem(localKey('l'), JSON.stringify(luggage));
+    localStorage.setItem(localKey('m'), JSON.stringify(members));
+    localStorage.setItem(localKey('s'), JSON.stringify({ doneItems: S.doneItems, doneLug: S.doneLug, dest: S.dest }));
+  } catch(e) {}
+}
+function localLoad() {
+  try {
+    var d = localStorage.getItem(localKey('d')); if (d) dests = JSON.parse(d);
+    var l = localStorage.getItem(localKey('l')); if (l) luggage = JSON.parse(l);
+    var m = localStorage.getItem(localKey('m')); if (m) members = JSON.parse(m);
+    var s = localStorage.getItem(localKey('s'));
+    if (s) { var p = JSON.parse(s); S.doneItems = p.doneItems||{}; S.doneLug = p.doneLug||{}; if(p.dest&&dests[p.dest]) S.dest = p.dest; }
+  } catch(e) {}
+  // Validate S.dest — fallback to first valid dest if needed
+  var keys = Object.keys(dests);
+  if(!S.dest || !dests[S.dest]) {
+    S.dest = keys.length ? keys[0] : '';
+  }
+  // If dest exists but has no places/schedule, still OK — just show overview
+}
+
+// ---- FEISHU CLOUD (stub — ready for API keys) ----
+function feishuLoad(callback) {
+  // TODO: implement after you provide Feishu credentials
+  // Will call Feishu Sheets API to read JSON blob from user's sheet
+  console.log('[Feishu] Load stub — awaiting API config');
+  callback(null);
+}
+function feishuSave(data) {
+  // TODO: implement after you provide Feishu credentials
+  // Will write JSON blob back to Feishu sheet
+  console.log('[Feishu] Save stub — awaiting API config');
+}
+
+// ---- AUTO-SYNC: save locally immediately, queue cloud save ----
+function save() {
+  if (!currentUser) return;
+  localSave();
+  // Debounce cloud saves: wait 2s of inactivity then push to Feishu
+  updateSyncIndicator('syncing');
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(function() {
+    if (FEISHU_CONFIG.app_id && currentUser.feishuSheet) {
+      feishuSave({ dests: dests, luggage: luggage, members: members });
+    }
+    updateSyncIndicator('synced');
+  }, 2000);
+}
+
+// ---- UI HELPERS ----
+function updateUserBadge() {
+  if (!currentUser) return;
+  var badge = document.getElementById('userBadge');
+  var syncEl = document.getElementById('syncIndicator');
+  if (badge) {
+    badge.style.display = 'flex';
+    badge.innerHTML = '<div class="user-dot" style="background:' + currentUser.color + '">' + currentUser.initials + '</div>'
+      + '<span class="user-name">' + currentUser.name + '</span>';
+  }
+  if (syncEl) syncEl.style.display = 'flex';
+}
+function updateSyncIndicator(status) {
+  syncStatus = status;
+  var el = document.getElementById('syncIndicator');
+  if (!el) return;
+  el.className = 'sync-indicator ' + status;
+  var labels = {
+    synced:  { zh: '已同步', en: 'Synced' },
+    syncing: { zh: '同步中', en: 'Syncing' },
+    offline: { zh: '本地', en: 'Local' }
+  };
+  el.innerHTML = '<div class="sync-dot"></div>' + (labels[status][LANG] || labels[status].zh);
+}
+function logout() {
+  if (!confirm(LANG === 'zh' ? '退出登录？' : 'Log out?')) return;
+  currentUser = null;
+  try { localStorage.removeItem('wp4_lastCode'); } catch(e) {}
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('inviteInput').value = '';
+  document.getElementById('loginErrMsg').textContent = '';
+}
+
+
+// ============ INIT ============
+// Load lang + theme preference
+try { var _lang = localStorage.getItem('wp4_lang'); if(_lang) LANG = _lang; } catch(e) {}
+try { var _thm = localStorage.getItem('wp4_theme'); if(_thm) THEME = _thm; } catch(e) {}
+applyTheme();
+document.getElementById('langBtn').textContent = LANG === 'zh' ? 'EN' : '中文';
+var _ht = document.getElementById('heroTitle');
+if (_ht) _ht.innerHTML = L('heroMain') + '<em>' + L('heroEm') + '</em>';
+
+// Update login screen language
+document.getElementById('loginTitle').textContent = LANG === 'zh' ? '输入邀请码' : 'Enter Invite Code';
+document.getElementById('loginSub').innerHTML = LANG === 'zh'
+  ? '每位旅伴都有专属邀请码<br>输入后即可进入你的个人行程空间'
+  : 'Each traveller has a unique invite code<br>Enter yours to access your personal trip space';
+
+// Try auto-login with remembered code
+try {
+  var _lastCode = localStorage.getItem('wp4_lastCode');
+  if (_lastCode && INVITE_CODES[_lastCode]) {
+    document.getElementById('inviteInput').value = _lastCode;
+    doLogin();
+  }
+} catch(e) {}
+
+
+// ============ RENDER ENGINE · WASHI ============
+
+var TAB_KEYS=['overview','places','schedule','stay','transport','food','luggage','budget'];
+
+// SVG icons
+function ico(name, size, color) {
+  size = size||20; color = color||'currentColor';
+  var p = 'fill="none" stroke="'+color+'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"';
+  var paths = {
+    sight:   '<circle cx="12" cy="10" r="3" '+p+'/><path d="M12 21c4.5-5 7-8.4 7-11a7 7 0 10-14 0c0 2.6 2.5 6 7 11z" '+p+'/>',
+    food:    '<path d="M7 3v8a2 2 0 002 2v8M11 3v8a2 2 0 01-2 2M15 3c-2 1-3 3-3 5s1 4 3 4v9" '+p+'/>',
+    stay:    '<path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-7H10v7H4a1 1 0 01-1-1z" '+p+'/>',
+    transit: '<rect x="5" y="3" width="14" height="14" rx="2" '+p+'/><path d="M5 13h14M9 17l-2 4M15 17l2 4" '+p+'/>',
+    luggage: '<rect x="4" y="8" width="16" height="13" rx="2" '+p+'/><path d="M9 8V6a2 2 0 014 0v2M12 13v2" '+p+'/>',
+    budget:  '<path d="M7 4l5 8 5-8M7 13h10M7 16h10M12 12v8" '+p+'/>',
+    overview:'<circle cx="12" cy="12" r="9" '+p+'/><path d="M12 7v5l3 3" '+p+'/>',
+    plus:    '<path d="M12 5v14M5 12h14" '+p+'/>',
+    arrow:   '<path d="M5 12h14M13 6l6 6-6 6" '+p+'/>',
+    check:   '<path d="M5 13l4 4L19 7" '+p+'/>',
+  };
+  return '<svg class="ico" width="'+size+'" height="'+size+'" viewBox="0 0 24 24">'+( paths[name]||'')+'</svg>';
+}
+
+function clearStorage() {
+  if(!confirm('清除所有本地数据？\nClear all local data?')) return;
+  try { 
+    // Clear all wp4 keys
+    Object.keys(localStorage).forEach(function(k){ 
+      if(k.indexOf('wp4_')===0) localStorage.removeItem(k); 
+    });
+  } catch(e){}
+  location.reload();
+}
+function fixDest() {
+  // Remove invalid dests (those with no cn or en name)
+  Object.keys(dests).forEach(function(k) {
+    if(!dests[k].cn && !dests[k].en) delete dests[k];
+  });
+  var keys = Object.keys(dests);
+  S.dest = keys.length ? keys[0] : '';
+  save();
+  renderAll();
+}
+function renderAll() {
+  try { renderChips(); } catch(e) { console.error('renderChips:',e); }
+  try { renderTabs(); } catch(e) { console.error('renderTabs:',e); }
+  try { render(); } catch(e) {
+    document.getElementById('bd').innerHTML = '<div style="padding:28px;font-family:monospace;font-size:11px;color:#B5462A;white-space:pre-wrap;background:#fff;border:2px solid #B5462A;margin:16px">ERROR: '+e.message+'</div>';
+  }
+}
+
+function renderChips() {
+  var html = Object.keys(dests).map(function(k) {
+    var d = dests[k]; var a = k===S.dest ? ' active' : '';
+    var lbl = LANG==='zh' ? d.cn : d.en;
+    return '<button class="dest-chip'+a+'" onclick="selD(\''+k+'\')">'
+      +lbl+'<span class="dest-chip-x" onclick="delDest(\''+k+'\',event)">&#xD7;</span></button>';
+  }).join('');
+  html += '<button class="dest-chip add" onclick="addDest()">'+(LANG==='zh'?'＋ 新增':'＋ Add')+'</button>';
+  document.getElementById('destChips').innerHTML = html;
+}
+
+function renderTabs() {
+  var keys = TAB_KEYS;
+  var zh  = ['总览','景点','行程','住宿','交通','餐饮','行李','账单'];
+  var en  = ['Overview','Places','Schedule','Stay','Transport','Food','Luggage','Budget'];
+  var icons = ['overview','sight','transit','stay','transit','food','luggage','budget'];
+  var html = keys.map(function(k,i) {
+    var a = S.tab===k ? ' active' : '';
+    var lbl = LANG==='zh' ? zh[i] : en[i];
+    return '<button class="tab-btn'+a+'" onclick="selT(\''+k+'\')">'
+      +ico(icons[i],18)+'<span>'+lbl+'</span></button>';
+  }).join('');
+  document.getElementById('tabbar').innerHTML = html;
+}
+
+function selT(k) { S.tab=k; renderTabs(); render(); }
+function selD(k) { S.dest=k; save(); renderChips(); render(); }
+
+function render() {
+  try {
+  if(!S.dest||!dests[S.dest]) {
+    document.getElementById('bd').innerHTML =
+      '<div style="padding:40px 22px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted)">'
+      +(LANG==='zh'?'请新增目的地':'ADD A DESTINATION TO BEGIN')+'</div>';
+    return;
+  }
+  var fns = {
+    overview:rOverview, places:rPlaces, schedule:rSchedule,
+    stay:rStay, transport:rTransport, food:rFood,
+    luggage:rLuggage, budget:rBudget
+  };
+  document.getElementById('bd').innerHTML = (fns[S.tab]||rOverview)();
+  } catch(err) {
+    document.getElementById('bd').innerHTML = '<div style="padding:20px;font-family:monospace;font-size:12px;color:#B5462A">Error: '+err.message+'</div>';
+  }
+}
+
+// ── OVERVIEW ──
+function rOverview() {
+  // Safety: if dest has no data at all, show empty state with helper
+  var d = D();
+  if(!d.cn && !d.en) {
+    return '<div style="padding:40px 22px;text-align:center">'
+      +'<div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:20px">DESTINATION NOT FOUND</div>'
+      +'<div style="font-family:var(--serif-jp);font-size:18px;color:var(--ink2);margin-bottom:24px">此目的地数据已丢失</div>'
+      +'<button class="btn-red" style="max-width:240px;margin:0 auto;display:block" onclick="fixDest()">修复 · Fix</button>'
+      +'</div>';
+  }
+  var placeDone = d.places.filter(function(p){return p.done;}).length;
+  var sTotal=0, sDone=0;
+  d.schedule.forEach(function(day){
+    sTotal+=day.placeIds.length;
+    day.placeIds.forEach(function(pid){if(S.doneItems['sc_'+day.date+'_'+pid])sDone++;});
+  });
+  var nights = nightsBetween(d.start,d.end);
+  var total = d.expenses.reduce(function(s,e){return s+e.amount;},0);
+  var cur = getCurrency();
+  var curSym = cur==='CNY'||cur==='JPY'?'¥':cur==='HKD'?'HK$':cur==='AUD'?'A$':'$';
+  var destName = LANG==='zh'?d.cn:d.en;
+  var pct = sTotal?Math.round(sDone/sTotal*100):0;
+
+  // flow steps
+  var flowNames = LANG==='zh'
+    ?['设定旅行日期','添加景点','添加住宿','添加交通','排行程','选餐厅']
+    :['Set travel dates','Add places','Add hotels','Add transport','Build schedule','Find food'];
+  var flowTabs = ['schedule','places','stay','transport','schedule','food'];
+  var flowDone = [!!(d.start&&d.end),d.places.length>0,d.hotels.length>0,d.transport.length>0,sTotal>0,d.restaurants.length>0];
+  var flowItems = flowNames.map(function(name,i){
+    var done = flowDone[i];
+    var tidx = TAB_KEYS.indexOf(flowTabs[i]);
+    return '<div class="flow-item" onclick="selT(\''+flowTabs[i]+'\')">'
+      +'<div class="flow-n">'+(done?'✓':(i+1))+'</div>'
+      +'<div style="flex:1"><div class="flow-label">'+name+'</div></div>'
+      +(done?'<div class="flow-done">'+ico('check',14,'var(--red)')+'</div>'
+             :'<div class="flow-go">'+(LANG==='zh'?'前往 ›':'Go ›')+'</div>')
+      +'</div>';
+  }).join('');
+
+  var stats = [
+    ['01', LANG==='zh'?'夜数 · NIGHTS':'NIGHTS', nights||'--', LANG==='zh'?'泊':'nights'],
+    ['02', LANG==='zh'?'景点 · SIGHTS':'SIGHTS', d.places.length, LANG==='zh'?'所':'spots'],
+    ['03', LANG==='zh'?'进度 · DONE':'DONE', pct+'%', ''],
+    ['04', LANG==='zh'?'旅伴 · TRAVELERS':'TRAVELERS', members.length, LANG==='zh'?'名':'ppl'],
+  ];
+  var statsHtml = stats.map(function(s,i){
+    return '<div class="stat-row">'
+      +'<div class="stat-n">'+s[0]+'</div>'
+      +'<div class="stat-label">'+s[1]+'</div>'
+      +'<div class="stat-v">'+s[2]+'<span class="stat-u">'+s[3]+'</span></div>'
+      +'</div>';
+  }).join('');
+
+  return '<div>'
+    // hero
+    +'<div class="ov-hero">'
+    +'<div class="ov-vert">'+destName.slice(0,2)+'</div>'
+    +'<div class="ov-headline">'
+    +'<div class="ov-mono">'+(LANG==='zh'?'SPRING · ':'PLAN · ')+new Date().getFullYear()+'</div>'
+    +'<div class="ov-serif-big">'+destName.replace(' ','<br>')+',</div>'
+    +'<div class="ov-serif-it">'+(LANG==='zh'?'出发。':'depart.')+'</div>'
+    +(d.start?'<div class="ov-dates">'+fmtDate(d.start)+' — '+fmtDate(d.end)+'<br>'+(nights||'?')+' '+(LANG==='zh'?'泊':'nights')+' · '+members.length+(LANG==='zh'?'名':'ppl')+'</div>':'')
+    +'</div></div>'
+    // red rule + index
+    +'<div style="padding:0 22px">'
+    +'<div class="red-rule" style="margin:0 0 8px"></div>'
+    +'<div class="ov-index"><span>I · '+(LANG==='zh'?'概览':'OVERVIEW')+'</span><span style="font-family:var(--mono);font-size:9px;letter-spacing:1px">v1.1</span></div>'
+    +'</div>'
+    // stats
+    +statsHtml
+    // planning flow
+    +'<div style="padding:20px 22px 10px;display:flex;justify-content:space-between;align-items:baseline">'
+    +'<div class="section-label">II · '+(LANG==='zh'?'规划步骤':'PLANNING')+'</div>'
+    +'<div class="section-label-jp">'+(LANG==='zh'?'规划':'手順')+'</div>'
+    +'</div>'
+    +flowItems
+    +'</div>';
+}
+
+// ── PLACES ──
+function rPlaces() {
+  var d = D();
+  var doneCnt = d.places.filter(function(p){return p.done;}).length;
+  var refHotel = d.hotels.length ? hn(d.hotels[0]) : '';
+
+  var items = d.places.map(function(p,i){
+    var name = pn(p); var sub = (LANG==='zh'?p.en:p.cn)+(p.area?' · '+p.area:'');
+    var num = 'nº'+(i+1<10?'0'+(i+1):(i+1));
+    return '<div class="place-item'+(p.done?' visited':'')+'" onclick="tglPlace(\''+p.id+'\')">'
+      +'<div class="place-num">'+num+'</div>'
+      +'<div style="flex:1">'
+      +'<div class="place-name">'+name+'</div>'
+      +'<div class="place-sub">'+sub+'</div>'
+      +(p.kh>0?'<div class="place-dist">🏨 '+p.kh+'km · ~'+p.min+'min</div>':'')
+      +'</div>'
+      +'<div class="place-chk">'+ico('check',14,'var(--red)')+'</div>'
+      +'<button class="del-btn" onclick="delPlace(\''+p.id+'\',event)">&#xD7;</button>'
+      +'</div>';
+  }).join('');
+
+  var emptyMsg = '<div style="padding:32px 22px;text-align:center;font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted)">'
+    +(LANG==='zh'?'未添加景点 — 在下方添加':'NO PLACES YET')+'</div>';
+
+  return '<div class="page-header">'
+    +'<div><div class="page-title-jp">'+(LANG==='zh'?'景点':'Places')+'</div>'
+    +'<div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:3px">'+doneCnt+'/'+d.places.length+' '+(LANG==='zh'?'已游览':'visited')+'</div></div>'
+    +(refHotel?'<div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;text-align:right">🏨 '+refHotel+'</div>':'')
+    +'</div>'
+    +(items||emptyMsg)
+    +'<div class="add-place-form">'
+    +'<div class="section-label" style="margin-bottom:14px">'+(LANG==='zh'?'添加景点':'ADD PLACE')+'</div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'名称':'Name')+' <span class="req">*</span></div><input class="f-inp" id="pcn" placeholder="e.g. 武侯寺 / Wuhou Temple"></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'英文名':'中文名')+'</div><input class="f-inp" id="pen" placeholder="e.g. Wuhou Temple"></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'区域':'Area')+'</div><input class="f-inp" id="parea" placeholder="e.g. 武侯区"></div>'
+    +'<button class="btn-red" onclick="addPlace()">＋ '+(LANG==='zh'?'添加':'Add')+'</button>'
+    +'</div>';
+}
+
+// ── SCHEDULE ──
+function rSchedule() {
+  var d = D();
+  if(!d.start||!d.end) {
+    return '<div class="page-header"><div><div class="page-title-jp">'+(LANG==='zh'?'行程':'Schedule')+'</div></div></div>'
+      +'<div class="date-setup">'
+      +'<div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:6px">'+(LANG==='zh'?'设定旅行日期 · SET DATES':'SET TRAVEL DATES')+'</div>'
+      +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'开始日期':'Start date')+' <span class="req">*</span></div><input class="f-inp" type="date" id="dstart" value="'+(d.start||'')+'"></div>'
+      +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'结束日期':'End date')+' <span class="req">*</span></div><input class="f-inp" type="date" id="dend" value="'+(d.end||'')+'"></div>'
+      +'<button class="btn-red" onclick="setDates()">'+(LANG==='zh'?'确认日期 · CONFIRM':'CONFIRM DATES')+'</button>'
+      +'</div>';
+  }
+
+  var days = buildDays();
+  var activeDay = S.schedDay||0;
+  if(activeDay >= days.length) activeDay = 0;
+  var day = days[activeDay];
+  if(!day) return '<div style="padding:20px">--</div>';
+
+  // day rail
+  var dayNames = LANG==='zh' ? ['日','一','二','三','四','五','六'] : ['S','M','T','W','T','F','S'];
+  var rail = days.map(function(dy,i){
+    var dt = new Date(dy.date+'T12:00:00');
+    var wd = dayNames[dt.getDay()];
+    var a = i===activeDay ? ' active' : '';
+    return '<button class="day-tab'+a+'" onclick="setSchedDay('+i+')">'
+      +'<span class="day-tab-d">D'+(i+1)+'</span>'
+      +'<span class="day-tab-n">'+dt.getDate()+'</span>'
+      +'<span class="day-tab-w">'+wd+'</span>'
+      +'</button>';
+  }).join('');
+
+  // hotel for day
+  var hotels = hotelsForDate(day.date);
+  var hotelBand = hotels.length
+    ? '<div class="hotel-band">'+ico('stay',12,'var(--red)')+'<span class="hotel-band-txt">HOTEL</span>'
+      +hotels.map(function(h){return '<span class="hotel-band-name">'+hn(h)+'</span>';}).join(' · ')+'</div>'
+    : '<div class="hotel-band hotel-band-none">'+ico('stay',12,'#C4891C')+'<span class="hotel-band-txt" style="color:#C4891C">'+(LANG==='zh'?'未设酒店':'NO HOTEL SET')+'</span></div>';
+
+  // timeline items
+  var firstHotel = hotels.length ? hotels[0] : null;
+  var tlItems = day.placeIds.map(function(pid,i){
+    var p = d.places.find(function(x){return x.id===pid;}); if(!p)return'';
+    var done = !!S.doneItems['sc_'+day.date+'_'+pid];
+    var name = pn(p); var sub = LANG==='zh'?p.en:p.cn;
+    var dist = firstHotel&&p.kh>0 ? '🏨 '+p.kh+'km · ~'+p.min+'min' : '';
+    return '<div class="tl-item'+(done?' done':'')+'">'
+      +'<div class="tl-left"><div class="tl-time">&nbsp;</div><div class="tl-no">nº'+(i+1<10?'0'+(i+1):(i+1))+'</div></div>'
+      +'<div class="tl-right" onclick="tglSchedItem(\''+day.date+'\',\''+pid+'\')">'
+      +'<div class="tl-kind">'+ico(p.type==='food'?'food':'sight',11,'var(--red)')
+      +'<span class="tl-kind-txt">'+(p.type==='food'?'FOOD':'SIGHT')+'</span></div>'
+      +'<div class="tl-title">'+name+'</div>'
+      +(sub&&sub!==name?'<div class="tl-sub">'+sub+'</div>':'')
+      +(dist?'<div class="tl-dist">'+dist+'</div>':'')
+      +'</div>'
+      +'<button class="del-btn" style="font-size:15px;padding:0 4px;margin-top:14px" onclick="removeFromDay(\''+day.date+'\',\''+pid+'\',event)">&#xD7;</button>'
+      +'</div>';
+  }).join('');
+
+  var chapterDate = new Date(day.date+'T12:00:00');
+  var chapterLabel = LANG==='zh'
+    ? chapterDate.toLocaleDateString('zh-CN',{month:'long',day:'numeric',weekday:'long'})
+    : chapterDate.toLocaleDateString('en-GB',{weekday:'long',month:'long',day:'numeric'});
+
+  return '<div class="page-header">'
+    +'<div><div class="page-title-jp">'+(LANG==='zh'?'行程':'Schedule')+'</div>'
+    +'<div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:3px">'+fmtDate(d.start)+' → '+fmtDate(d.end)+'</div></div>'
+    +'<button class="btn-ghost" style="width:auto;padding:7px 12px;font-size:8px" onclick="D().start=\'\';D().end=\'\';save();render()">✏ '+(LANG==='zh'?'改期':'EDIT')+'</button>'
+    +'</div>'
+    +'<div class="day-rail">'+rail+'</div>'
+    +'<div class="day-chapter">'
+    +'<div class="day-stamp">'+(activeDay+1)+'</div>'
+    +'<div class="day-chapter-inner">'
+    +'<div class="day-chapter-mono">'+fmtDate(day.date).toUpperCase()+'</div>'
+    +'<div class="day-chapter-title">'+chapterLabel+'</div>'
+    +'</div></div>'
+    +hotelBand
+    +'<div class="tl-wrap">'
+    +(tlItems||'<div style="padding:20px 0;font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1.5px">'+(LANG==='zh'?'暂无景点':'NO PLACES YET')+'</div>')
+    +'<button class="add-to-day" onclick="openPicker(\''+day.date+'\')">'
+    +'＋ '+(LANG==='zh'?'选择景点':'SELECT PLACES')+'</button>'
+    +'</div>';
+}
+
+function setSchedDay(i) { S.schedDay=i; render(); }
+
+// ── STAY ──
+function rStay() {
+  var d = D();
+  var overlap = hotelsOverlap(d.hotels);
+  var items = d.hotels.map(function(h){
+    var ni = nightsBetween(h.checkin,h.checkout);
+    return '<div class="hotel-item">'
+      +'<div class="hotel-icon">🏨</div>'
+      +'<div style="flex:1">'
+      +'<div class="hotel-name-main">'+hn(h)+'</div>'
+      +(h.cn!==h.en?'<div class="hotel-name-sub">'+(LANG==='zh'?h.en:h.cn)+'</div>':'')
+      +'<div class="hotel-dates-txt">'+L('checkin')+' '+fmtDate(h.checkin)+'  →  '+L('checkout')+' '+fmtDate(h.checkout)+(ni>0?' · '+ni+'n':'')+'</div>'
+      +'</div>'
+      +'<button class="del-btn" onclick="delHotel(\''+h.id+'\',event)">&#xD7;</button>'
+      +'</div>';
+  }).join('')||'<div style="padding:28px 22px;font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted)">'+(LANG==='zh'?'未添加酒店':'NO HOTELS ADDED')+'</div>';
+
+  return '<div class="page-header"><div class="page-title-jp">'+(LANG==='zh'?'住宿':'Stay')+'</div></div>'
+    +(overlap?'<div class="warn-band" style="margin:12px 22px">⚠ '+L('hotelOverlapWarn')+'</div>':'')
+    +items
+    +'<div class="info-band" style="margin:12px 22px 0">'+L('hotelInfo')+'</div>'
+    +'<div class="hotel-add-form">'
+    +'<div class="section-label" style="margin-bottom:14px">'+(LANG==='zh'?'添加酒店':'ADD HOTEL')+'</div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'酒店名称':'Hotel name')+' <span class="req">*</span></div><input class="f-inp" id="hcn" placeholder="e.g. 丽橙酒店"></div>'
+    +'<div class="f-group"><div class="f-label">English name</div><input class="f-inp" id="hen" placeholder="e.g. Licheng Hotel"></div>'
+    +'<div class="f-group"><div class="f-label">'+L('checkin')+'</div><input class="f-inp" type="date" id="hci"></div>'
+    +'<div class="f-group"><div class="f-label">'+L('checkout')+'</div><input class="f-inp" type="date" id="hco"></div>'
+    +'<button class="btn-red" onclick="addHotel()">＋ '+(LANG==='zh'?'添加':'Add')+'</button>'
+    +'</div>';
+}
+
+// ── TRANSPORT ──
+function rTransport() {
+  var d = D();
+  var typeOpts = [
+    {v:'flight',l:L('ttype_flight')},{v:'train',l:L('ttype_train')},
+    {v:'bus',l:L('ttype_bus')},{v:'ferry',l:L('ttype_ferry')},
+    {v:'rental',l:L('ttype_rental')},{v:'rideshare',l:L('ttype_rideshare')},
+    {v:'other',l:L('ttype_other')}
+  ].map(function(o){return'<option value="'+o.v+'">'+o.l+'</option>';}).join('');
+
+  var items = d.transport.map(function(tp){
+    return '<div class="tp-item">'
+      +'<div class="tp-icon-box">'+(TICONS[tp.type]||'🚐')+'</div>'
+      +'<div style="flex:1"><div class="tp-name">'+tn(tp)+'</div>'
+      +(tp.detail?'<div class="tp-sub">'+tp.detail+'</div>':'')
+      +(tp.date?'<div class="tp-sub">'+fmtDate(tp.date)+'</div>':'')+'</div>'
+      +(tp.cost>0?'<div class="tp-cost">'+getCurrency()+' '+tp.cost.toLocaleString()+'</div>':'')
+      +'<button class="del-btn" onclick="delTransport(\''+tp.id+'\',event)">&#xD7;</button>'
+      +'</div>';
+  }).join('')||'<div style="padding:28px 22px;font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted)">'+(LANG==='zh'?'未添加交通':'NO TRANSPORT ADDED')+'</div>';
+
+  return '<div class="page-header"><div class="page-title-jp">'+(LANG==='zh'?'交通':'Transport')+'</div></div>'
+    +items
+    +'<div class="tp-add-form">'
+    +'<div class="section-label" style="margin-bottom:14px">'+(LANG==='zh'?'添加交通':'ADD TRANSPORT')+'</div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'类型':'Type')+'</div><select class="f-sel" id="ttype" onchange="tpTypeChanged()">'+typeOpts+'</select></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'名称':'Name')+' <span class="req">*</span></div><input class="f-inp" id="tcn" placeholder="'+L('transportNamePH')+'"></div>'
+    +'<div class="f-group"><div class="f-label">'+L('transportDetail')+'</div><input class="f-inp" id="tdetail" placeholder="'+L('transportDetailPH')+'"></div>'
+    +'<div class="f-group" id="tdate_row"><div class="f-label">'+L('transportDate')+'</div><input class="f-inp" type="date" id="tdate"></div>'
+    +'<div class="f-group"><div class="f-label">'+L('transportCost')+' ('+getCurrency()+')</div><input class="f-inp" type="number" id="tcost" placeholder="0"></div>'
+    +'<button class="btn-red" onclick="addTransport()">＋ '+(LANG==='zh'?'添加':'Add')+'</button>'
+    +'</div>';
+}
+
+// ── FOOD ──
+function rFood() {
+  var d = D();
+  var eaten = d.restaurants.filter(function(r){return r.eaten;}).length;
+  var items = d.restaurants.map(function(r){
+    var name = LANG==='zh'?r.cn:r.en; var sub = LANG==='zh'?r.en:r.cn;
+    return '<div class="food-item'+(r.eaten?' eaten':'')+'" onclick="tglFood(\''+r.id+'\')">'
+      +'<div class="food-dot"></div>'
+      +'<div style="flex:1"><div class="food-name">'+name+'</div>'
+      +(sub&&sub!==name?'<div class="food-sub">'+sub+'</div>':'')
+      +(r.loc?'<div class="food-sub">📍 '+r.loc+'</div>':'')+'</div>'
+      +'<div class="food-tag">'+(r.eaten?(LANG==='zh'?'已去':'DONE'):(r.tag||''))+'</div>'
+      +'<button class="del-btn" onclick="delFood(\''+r.id+'\',event)">&#xD7;</button>'
+      +'</div>';
+  }).join('')||'<div style="padding:28px 22px;font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted)">'+(LANG==='zh'?'未添加餐厅':'NO RESTAURANTS ADDED')+'</div>';
+
+  return '<div class="page-header"><div>'
+    +'<div class="page-title-jp">'+(LANG==='zh'?'餐饮':'Food')+'</div>'
+    +'<div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:3px">'+eaten+'/'+d.restaurants.length+' '+(LANG==='zh'?'已去':'eaten')+'</div>'
+    +'</div></div>'
+    +items
+    +'<div class="food-add">'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'餐厅名称':'Name')+' <span class="req">*</span></div><input class="f-inp" id="fcn" placeholder="e.g. 锅贴、抄手"></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'英文名':'中文名')+'</div><input class="f-inp" id="fen" placeholder="English name"></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'位置':'Location')+'</div><input class="f-inp" id="floc" placeholder="e.g. 武侯区附近"></div>'
+    +'<button class="btn-red" onclick="addFood()">＋ '+(LANG==='zh'?'添加':'Add')+'</button>'
+    +'</div>';
+}
+
+// ── LUGGAGE ──
+function rLuggage() {
+  var catOpts = LANG==='zh'
+    ?'<option>洗漱</option><option>衣物</option><option>电器</option><option>电子</option><option>杂物</option>'
+    :'<option>Toiletries</option><option>Clothing</option><option>Electronics</option><option>Misc</option>';
+
+  function mkList(arr,tp) {
+    return arr.map(function(it,i){
+      var done = !!S.doneLug[tp+'_'+i];
+      var label = lln(it);
+      return '<div class="lug-item'+(done?' chk':'')+'" onclick="tglLug(\''+tp+'\','+i+')">'
+        +'<div class="lug-box"><span class="lug-tick">&#x2713;</span></div>'
+        +'<span class="lug-label">'+label+'</span>'
+        +'<button class="del-btn" style="font-size:14px;padding:0 4px" onclick="(function(e){e.stopPropagation();delLug(\''+tp+'\','+i+',e)})(event)">&#xD7;</button>'
+        +'</div>';
+    }).join('');
+  }
+  var cd = luggage.checked.filter(function(_,i){return S.doneLug['checked_'+i];}).length;
+  var cy = luggage.carry.filter(function(_,i){return S.doneLug['carry_'+i];}).length;
+
+  return '<div class="page-header"><div class="page-title-jp">'+(LANG==='zh'?'行李':'Luggage')+'</div></div>'
+    +'<div style="padding:12px 22px 6px"><div class="section-label">'+(LANG==='zh'?'托运':'CHECKED')+' · '+cd+'/'+luggage.checked.length+'</div></div>'
+    +mkList(luggage.checked,'checked')
+    +'<div class="lug-add">'
+    +'<input class="f-inp" id="li_checked" placeholder="'+(LANG==='zh'?'添加物品...':'Add item...')+'" style="flex:1">'
+    +'<select class="f-sel" id="lc_checked" style="width:100px">'+catOpts+'</select>'
+    +'<button class="btn-red" style="width:auto;padding:11px 14px" onclick="addLug(\'checked\')">＋</button>'
+    +'</div>'
+    +'<div style="padding:16px 22px 6px"><div class="section-label">'+(LANG==='zh'?'随身':'HAND CARRY')+' · '+cy+'/'+luggage.carry.length+'</div></div>'
+    +mkList(luggage.carry,'carry')
+    +'<div class="lug-add">'
+    +'<input class="f-inp" id="li_carry" placeholder="'+(LANG==='zh'?'添加物品...':'Add item...')+'" style="flex:1">'
+    +'<select class="f-sel" id="lc_carry" style="width:100px">'+catOpts+'</select>'
+    +'<button class="btn-red" style="width:auto;padding:11px 14px" onclick="addLug(\'carry\')">＋</button>'
+    +'</div>';
+}
+
+// ── BUDGET ──
+function rBudget() {
+  var d = D(); var exps = d.expenses;
+  var bal = calcBal(); var txns = calcSettle(bal);
+  var total = exps.reduce(function(s,e){return s+e.amount;},0);
+  var cur = getCurrency();
+  var curSym = cur==='CNY'||cur==='JPY'?'¥':cur==='HKD'?'HK$':cur==='AUD'?'A$':'$';
+  var half = total/Math.max(1,members.length);
+  var CURRENCIES = ['HKD','CNY','AUD','USD','EUR','GBP','JPY','SGD'];
+  var curOpts = CURRENCIES.map(function(c){return'<option value="'+c+'"'+(c===cur?' selected':'')+'>'+c+'</option>';}).join('');
+  var payerOpts = members.map(function(m){return'<option value="'+m.id+'">'+m.name+'</option>';}).join('');
+  var splitOpts = '<option value="all">'+(LANG==='zh'?'平摊':'All')+'</option>'
+    +members.map(function(m){return'<option value="'+m.id+'">'+m.name+'</option>';}).join('');
+
+  // expense list
+  var expItems = exps.map(function(e){
+    var po = members.map(function(m){return'<option value="'+m.id+'"'+(m.id===e.payer?' selected':'')+'>'+m.name+'</option>';}).join('');
+    var so = '<option value="all"'+(e.split==='all'?' selected':'')+'>'+(LANG==='zh'?'平摊':'All')+'</option>'
+      +members.map(function(m){return'<option value="'+m.id+'"'+(e.split===m.id?' selected':'')+'>'+m.name+'</option>';}).join('');
+    var ico_map = {f:'✈️',h:'🏨',m:'🍜',t:'🎟️',x:'🚇'};
+    return '<div class="exp-item">'
+      +'<div class="exp-date">'+(ico_map[e.cat]||'•')+'</div>'
+      +'<div style="flex:1">'
+      +'<div class="exp-name">'+(LANG==='zh'?e.cn:e.en)+'</div>'
+      +'<div class="exp-controls">'
+      +'<input class="exp-amt-inp" type="number" value="'+e.amount+'" onchange="chgAmt('+e.id+',this.value)" placeholder="0">'
+      +'<select class="exp-sel" onchange="chgPayer('+e.id+',this.value)">'+po+'</select>'
+      +'<select class="exp-sel" onchange="chgSplit('+e.id+',this.value)">'+so+'</select>'
+      +'<select class="exp-sel" id="ec_'+e.id+'">'
+      +'<option value="m"'+(e.cat==='m'?' selected':'')+'>🍜</option>'
+      +'<option value="f"'+(e.cat==='f'?' selected':'')+'>✈️</option>'
+      +'<option value="h"'+(e.cat==='h'?' selected':'')+'>🏨</option>'
+      +'<option value="t"'+(e.cat==='t'?' selected':'')+'>🎟️</option>'
+      +'<option value="x"'+(e.cat==='x'?' selected':'')+'>🚇</option>'
+      +'</select>'
+      +'</div></div>'
+      +'<button class="del-btn" onclick="delExp('+e.id+')">&#xD7;</button>'
+      +'</div>';
+  }).join('');
+
+  // who paid rows
+  var maxPaid = Math.max(1,Math.max.apply(null,members.map(function(m){
+    return exps.filter(function(e){return e.payer===m.id;}).reduce(function(s,e){return s+e.amount;},0);
+  })));
+  var paidRows = members.map(function(m){
+    var paid = exps.filter(function(e){return e.payer===m.id;}).reduce(function(s,e){return s+e.amount;},0);
+    var b = bal[m.id]||0;
+    var bStr = b>0.5?(LANG==='zh'?'收回 ':'Gets ')+curSym+Math.round(b)
+      :b<-0.5?(LANG==='zh'?'应付 ':'Owes ')+curSym+Math.round(-b)
+      :(LANG==='zh'?'✓ 已平':'✓ OK');
+    var bCol = b>0.5?'var(--red)':b<-0.5?'#8C5A00':'var(--muted)';
+    return '<div class="paid-row">'
+      +'<div class="paid-name">'+m.name+'</div>'
+      +'<div class="paid-bar-wrap"><div class="paid-bar-fill" style="width:'+(paid/maxPaid*100)+'%;height:100%;background:'+m.col.bg+';border-right:2px solid '+m.col.tx+'"></div></div>'
+      +'<div class="paid-paid">'+curSym+Math.round(paid).toLocaleString()+'</div>'
+      +'<div class="paid-status" style="color:'+bCol+'">'+bStr+'</div>'
+      +'</div>';
+  }).join('');
+
+  // settle
+  var settleHtml = txns.length
+    ? '<div class="settle-card">'
+      +'<div class="settle-hdr"><div class="settle-mono">SETTLEMENT · '+(LANG==='zh'?'结算':'精算')+'</div><div class="settle-jp">'+(LANG==='zh'?'精算':'精算')+'</div></div>'
+      +txns.map(function(tx){
+        return '<div class="settle-row" style="margin-bottom:12px">'
+          +'<div class="settle-from">'+tx.from.name+' → '+tx.to.name+'</div>'
+          +'<div class="settle-amt-big">'+curSym+Math.round(tx.amt).toLocaleString()+'</div>'
+          +'</div>';
+      }).join('')
+      +'<div class="settle-bar">'
+      +members.map(function(m){
+        var paid=exps.filter(function(e){return e.payer===m.id;}).reduce(function(s,e){return s+e.amount;},0);
+        return'<div style="flex:'+paid+';background:'+m.col.tx+'"></div>';
+      }).join('')
+      +'</div>'
+      +'<div style="display:flex;justify-content:space-between;margin-top:8px">'
+      +members.map(function(m){return'<div style="font-family:var(--mono);font-size:9px;color:var(--muted)">'+m.name+'</div>';}).join('')
+      +'</div></div>'
+    : '<div class="settle-card"><div class="settle-ok">'+ico('check',16,'var(--red)')+' '+(LANG==='zh'?'账目已平衡':'All settled')+'</div></div>';
+
+  // members
+  var memberHtml = '<div class="budget-members">'
+    +members.map(function(m){
+      return '<div class="m-card"><div class="m-av" style="width:36px;height:36px;font-size:12px;background:'+m.col.bg+';color:'+m.col.tx+'">'+m.name.slice(0,2).toUpperCase()+'</div><div class="m-name">'+m.name+'</div></div>';
+    }).join('')
+    +(members.length<6?'<div class="m-card"><div class="m-add" style="width:36px;height:36px" onclick="addMember()">+</div><div class="m-name">'+(LANG==='zh'?'添加':'Add')+'</div></div>':'')
+    +'</div>';
+
+  return '<div class="page-header">'
+    +'<div class="page-title-jp">'+(LANG==='zh'?'账单':'Budget')+'</div>'
+    +'<div class="cur-sel-wrap" style="display:flex;align-items:center;gap:8px">'
+    +'<span style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--muted)">'+(LANG==='zh'?'币种':'CUR')+'</span>'
+    +'<select class="cur-sel" style="font-size:12px;padding:4px 6px;border:1px solid var(--hair2);background:var(--card);color:var(--ink);font-family:var(--mono)" onchange="setCurrency(this.value)">'+curOpts+'</select>'
+    +'</div></div>'
+    // big total
+    +'<div class="budget-total">'
+    +'<div class="total-mono">TOTAL · '+(LANG==='zh'?'合计':'TRIP')+'</div>'
+    +'<div class="total-amount"><span class="total-sym">'+curSym+'</span><div class="total-num">'+Math.round(total).toLocaleString()+'</div></div>'
+    +'<div class="total-per">'+(LANG==='zh'?'per person · ':'per person · ')+curSym+Math.round(half).toLocaleString()+'</div>'
+    +'</div>'
+    +'<div class="red-rule" style="margin:0 22px 18px"></div>'
+    // members + settle
+    +memberHtml
+    +settleHtml
+    // who paid
+    +'<div style="padding:14px 22px 6px"><div class="section-label">'+(LANG==='zh'?'各人付款':'WHO PAID')+'</div></div>'
+    +paidRows
+    // expense list
+    +'<div class="exp-entries">'
+    +'<div class="entries-hdr"><div class="section-label">ENTRIES · '+exps.length+'</div><div class="section-label-jp">'+(LANG==='zh'?'明细':'明細')+'</div></div>'
+    +expItems
+    +'</div>'
+    // add expense
+    +'<div class="exp-add-form">'
+    +'<div class="section-label" style="margin-bottom:14px">'+(LANG==='zh'?'添加费用':'ADD EXPENSE')+'</div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'项目':'Item')+' <span class="req">*</span></div><input class="f-inp" id="en" placeholder="'+(LANG==='zh'?'e.g. 晚餐':'e.g. Dinner')+'"></div>'
+    +'<div class="exp-add-grid">'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'金额':'Amount')+' <span class="req">*</span></div><input class="f-inp" id="ea" type="number" placeholder="0"></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'谁付':'Paid by')+'</div><select class="f-sel" id="ep">'+payerOpts+'</select></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'摊给':'Split')+'</div><select class="f-sel" id="es">'+splitOpts+'</select></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'类别':'Category')+'</div>'
+    +'<select class="f-sel" id="ec"><option value="m">🍜 meal</option><option value="f">✈️ flight</option><option value="h">🏨 hotel</option><option value="t">🎟️ ticket</option><option value="x">🚇 transit</option></select>'
+    +'</div></div>'
+    +'<button class="btn-red" onclick="addExp()">＋ '+(LANG==='zh'?'添加':'Add')+'</button>'
+    +'</div>';
+}
+
+// ── PICKER ──
+function renderPickerList() {
+  var places = D().places;
+  var html = places.map(function(p){
+    var sel = S.pickerSel.indexOf(p.id)>=0;
+    var name = pn(p); var sub = (LANG==='zh'?p.en:p.cn)+(p.area?' · '+p.area:'');
+    var dist = p.kh>0?(p.kh+'km · ~'+p.min+'min'):'';
+    return '<div class="picker-item'+(sel?' sel':'')+'" onclick="tglPicker(\''+p.id+'\')">'
+      +'<div class="pi-circ"><span class="pi-tick">&#x2713;</span></div>'
+      +'<div style="flex:1"><div class="pi-name">'+name+'</div><div class="pi-sub">'+sub+'</div></div>'
+      +(dist?'<div class="pi-dist">'+dist+'</div>':'')
+      +'</div>';
+  }).join('');
+  if(!html) html='<div style="padding:28px 22px;font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted)">'+(LANG==='zh'?'请先在景点页添加景点':'Add places first')+'</div>';
+  document.getElementById('pickerList').innerHTML = html;
+}
+
+// ── INIT ──
+function updateUserBadge() {
+  if(!currentUser)return;
+  var badge=document.getElementById('userBadge');
+  var pip=document.getElementById('userPip');
+  var nm=document.getElementById('userNm');
+  var syncPip=document.getElementById('syncPip');
+  if(badge){badge.style.display='flex';}
+  if(pip){pip.style.background=currentUser.color;pip.textContent=currentUser.initials;}
+  if(nm){nm.textContent=currentUser.name;}
+  if(syncPip){syncPip.style.display='block';}
+}
+function updateSyncIndicator(status) {
+  syncStatus=status;
+  var el=document.getElementById('syncPip');
+  if(!el)return;
+  el.className='sync-pip '+status;
+}
+
+// ============ INIT ============
+try{var _lang=localStorage.getItem('wp4_lang');if(_lang)LANG=_lang;}catch(e){}
+document.getElementById('langBtn').textContent=LANG==='zh'?'EN':'中文';
+S.schedDay=0;
+try{
+  var _lastCode=localStorage.getItem('wp4_lastCode');
+  if(_lastCode&&INVITE_CODES[_lastCode]){
+    document.getElementById('inviteInput').value=_lastCode;
+    doLogin();
+  }
+}catch(e){}
+</script>
+</body>
+</html>
