@@ -448,7 +448,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15p
       <button class="login-demo-btn" onclick="(function(){try{document.getElementById('inviteInput').value='DEMO';doLogin();}catch(e){document.getElementById('loginErrMsg').textContent='Error: '+e.message;}})()">体验 Demo · Try Demo</button>
       <button class="login-demo-btn" style="margin-top:6px;font-size:8px;opacity:0.3" onclick="(function(){try{clearStorage();}catch(e){location.reload();}})()">清除缓存 · Clear cache</button>
     </div>
-    <div class="login-footer">v1.7 · 京都和纸</div>
+    <div class="login-footer">v1.8 · 京都和纸</div>
   </div>
 
   <!-- STATUS BAR -->
@@ -506,6 +506,33 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15p
 
 
 
+
+
+  // Insert transport connectors between items
+  var mIcons={walk:'🚶',metro:'🚇',taxi:'🚕',bus:'🚌',rental:'🚗',other:'🚐'};
+  var mZh={walk:'步行',metro:'地铁',taxi:'滴滴',bus:'巴士',rental:'租车',other:'其他'};
+  var mEn={walk:'Walk',metro:'Metro',taxi:'DiDi',bus:'Bus',rental:'Rental',other:'Other'};
+  var mList=['walk','metro','taxi','bus','rental','other'];
+  var mLbl=LANG==='zh'?mZh:mEn;
+  var tlParts=[];
+  tlItemsArr.forEach(function(item,i){
+    tlParts.push(item);
+    if(i<day.placeIds.length-1){
+      var fp=day.placeIds[i],tp=day.placeIds[i+1];
+      var cur=getSegmentMode(day.date,fp,tp);
+      var modeBtns=mList.map(function(m){
+        var active=cur===m;
+        var bs='padding:3px 7px;border:1px solid '+(active?'var(--red)':'var(--hair2)')+';background:'+(active?'var(--red)':'transparent')+';color:'+(active?'white':'var(--muted)')+';font-size:12px;cursor:pointer;line-height:1';
+        return '<button style="'+bs+'" onclick="setSegmentMode(this)" data-date="'+day.date+'" data-from="'+fp+'" data-to="'+tp+'" data-mode="'+m+'">'+(mIcons[m]||m)+'</button>';
+      }).join('');
+      var connector='<div style="display:flex;align-items:center;gap:8px;padding:5px 0 5px 52px;border-bottom:1px dashed var(--hair)">'
+        +(cur?'<span style="font-family:var(--mono);font-size:10px;color:var(--red);letter-spacing:1px">'+(mIcons[cur]||'')+' '+(mLbl[cur]||cur)+'</span>':'<span style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px">'+(LANG==="zh"?"车程":"转乘")+'</span>')
+        +'<div style="display:flex;gap:3px">'+modeBtns+'</div>'
+        +'</div>';
+      tlParts.push(connector);
+    }
+  });
+  var tlItems=tlParts.join('');
 
 
 
@@ -1311,9 +1338,9 @@ function rOverview() {
 
   var stats = [
     ['01', LANG==='zh'?'夜数 · NIGHTS':'NIGHTS', nights||'--', LANG==='zh'?'晚':'nights'],
-    ['02', LANG==='zh'?'景点 · SIGHTS':'SIGHTS', d.places.length, LANG==='zh'?'个':'个'],
+    ['02', LANG==='zh'?'景点 · SIGHTS':'SIGHTS', d.places.length, LANG==='zh'?'个':'spots'],
     ['03', LANG==='zh'?'进度 · DONE':'DONE', pct+'%', ''],
-    ['04', LANG==='zh'?'旅伴 · TRAVELERS':'TRAVELERS', members.length, LANG==='zh'?'人':'人'],
+    ['04', LANG==='zh'?'旅伴 · TRAVELERS':'TRAVELERS', members.length, LANG==='zh'?'人':'ppl'],
   ];
   var statsHtml = stats.map(function(s,i){
     return '<div class="stat-row">'
@@ -1331,19 +1358,19 @@ function rOverview() {
     +'<div class="ov-mono">'+(LANG==='zh'?'SPRING · ':'PLAN · ')+new Date().getFullYear()+'</div>'
     +'<div class="ov-serif-big">'+destName.replace(' ','<br>')+',</div>'
     +'<div class="ov-serif-it">'+(LANG==='zh'?'出发。':'depart.')+'</div>'
-    +(d.start?'<div class="ov-dates">'+fmtDate(d.start)+' — '+fmtDate(d.end)+'<br>'+(nights||'?')+' '+(LANG==='zh'?'晚':'nights')+' · '+members.length+(LANG==='zh'?'人':'人')+'</div>':'')
+    +(d.start?'<div class="ov-dates">'+fmtDate(d.start)+' — '+fmtDate(d.end)+'<br>'+(nights||'?')+' '+(LANG==='zh'?'晚':'nights')+' · '+members.length+(LANG==='zh'?'人':'ppl')+'</div>':'')
     +'</div></div>'
     // red rule + index
     +'<div style="padding:0 22px">'
     +'<div class="red-rule" style="margin:0 0 8px"></div>'
-    +'<div class="ov-index"><span>I · '+(LANG==='zh'?'概览':'OVERVIEW')+'</span><span style="font-family:var(--mono);font-size:9px;letter-spacing:1px">v1.7</span></div>'
+    +'<div class="ov-index"><span>I · '+(LANG==='zh'?'概览':'OVERVIEW')+'</span><span style="font-family:var(--mono);font-size:9px;letter-spacing:1px">v1.8</span></div>'
     +'</div>'
     // stats
     +statsHtml
     // planning flow
     +'<div style="padding:20px 22px 10px;display:flex;justify-content:space-between;align-items:baseline">'
     +'<div class="section-label">II · '+(LANG==='zh'?'规划步骤':'PLANNING')+'</div>'
-    +'<div class="section-label-jp">'+(LANG==='zh'?'规划':'手順')+'</div>'
+    +'<div class="section-label-jp">'+(LANG==='zh'?'规划':'Steps')+'</div>'
     +'</div>'
     +flowItems
     +'</div>';
@@ -1381,13 +1408,36 @@ function rPlaces() {
     +(items||emptyMsg)
     +'<div class="add-place-form">'
     +'<div class="section-label" style="margin-bottom:14px">'+(LANG==='zh'?'添加景点':'ADD PLACE')+'</div>'
-    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'名称':'Name')+' <span class="req">*</span></div><input class="f-inp" id="pcn" placeholder="e.g. 武侯寺 / Wuhou Temple"></div>'
-    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'英文名':'中文名')+'</div><input class="f-inp" id="pen" placeholder="e.g. Wuhou Temple"></div>'
-    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'区域':'Area')+'</div><input class="f-inp" id="parea" placeholder="e.g. 武侯区"></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'名称':'Name')+' <span class="req">*</span></div><input class="f-inp" id="pcn" placeholder="'+ph('武侯寺','Wuhou Temple')+'"></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'英文名':'中文名')+'</div><input class="f-inp" id="pen" placeholder="'+ph('武侯寺','Wuhou Temple')+'"></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'区域':'Area')+'</div><input class="f-inp" id="parea" placeholder="'+ph('武侯区','Wuhou District')+'"></div>'
     +'<button class="btn-red" onclick="addPlace()">＋ '+(LANG==='zh'?'添加':'Add')+'</button>'
     +'</div>';
 }
 
+
+// ── SEGMENT TRANSPORT HELPERS ──
+function getSegmentMode(date,from,to){return S.doneItems['seg_'+date+'_'+from+'_'+to]||'';}
+function setSegmentMode(el){
+  var date=el.dataset.date,from=el.dataset.from,to=el.dataset.to,mode=el.dataset.mode;
+  var key='seg_'+date+'_'+from+'_'+to;
+  S.doneItems[key] = (S.doneItems[key]===mode)?'':mode;
+  // Add to transport list
+  var d=D(),segKey='segtp_'+date+'_'+from+'_'+to;
+  var icons={walk:'🚶',metro:'🚇',taxi:'🚕',bus:'🚌',rental:'🚗',other:'🚐'};
+  var fromItem=d.places.find(function(x){return x.id===from;})||d.restaurants.find(function(x){return 'r_'+x.id===from;});
+  var toItem=d.places.find(function(x){return x.id===to;})||d.restaurants.find(function(x){return 'r_'+x.id===to;});
+  var fromN=fromItem?(fromItem.cn||fromItem.name):'?';
+  var toN=toItem?(toItem.cn||toItem.name):'?';
+  if(S.doneItems[key]&&!d.transport.find(function(t){return t.id===segKey;})){
+    d.transport.push({id:segKey,type:mode==='taxi'?'rideshare':mode==='metro'?'train':mode,
+      cn:(icons[mode]||'>')+' '+fromN+' → '+toN,en:(icons[mode]||'>')+' '+fromN+' → '+toN,
+      detail:mode,date:date,cost:0});
+  } else if(!S.doneItems[key]){
+    d.transport=d.transport.filter(function(t){return t.id!==segKey;});
+  }
+  save();render();
+}
 // ── SCHEDULE ──
 function rSchedule() {
   var d = D();
@@ -1572,8 +1622,8 @@ function rStay() {
     +'<div class="info-band" style="margin:12px 22px 0">'+L('hotelInfo')+'</div>'
     +'<div class="hotel-add-form">'
     +'<div class="section-label" style="margin-bottom:14px">'+(LANG==='zh'?'添加酒店':'ADD HOTEL')+'</div>'
-    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'酒店名称':'Hotel name')+' <span class="req">*</span></div><input class="f-inp" id="hcn" placeholder="e.g. 丽橙酒店"></div>'
-    +'<div class="f-group"><div class="f-label">English name</div><input class="f-inp" id="hen" placeholder="e.g. Licheng Hotel"></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'酒店名称':'Hotel name')+' <span class="req">*</span></div><input class="f-inp" id="hcn" placeholder="'+ph('丽橙酒店','Licheng Hotel')+'"></div>'
+    +'<div class="f-group"><div class="f-label">English name</div><input class="f-inp" id="hen" placeholder="'+ph('丽橙酒店','Licheng Hotel')+'"></div>'
     +'<div class="f-group"><div class="f-label">'+L('checkin')+'</div><input class="f-inp" type="date" id="hci"></div>'
     +'<div class="f-group"><div class="f-label">'+L('checkout')+'</div><input class="f-inp" type="date" id="hco"></div>'
     +'<button class="btn-red" onclick="addHotel()">＋ '+(LANG==='zh'?'添加':'Add')+'</button>'
@@ -1636,9 +1686,9 @@ function rFood() {
     +'</div></div>'
     +items
     +'<div class="food-add">'
-    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'餐厅名称':'Name')+' <span class="req">*</span></div><input class="f-inp" id="fcn" placeholder="e.g. 锅贴、抄手"></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'餐厅名称':'Name')+' <span class="req">*</span></div><input class="f-inp" id="fcn" placeholder="'+ph('锄贴、抄手','Guotie & Wonton')+'"></div>'
     +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'英文名':'中文名')+'</div><input class="f-inp" id="fen" placeholder="English name"></div>'
-    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'位置':'Location')+'</div><input class="f-inp" id="floc" placeholder="e.g. 武侯区附近"></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'位置':'Location')+'</div><input class="f-inp" id="floc" placeholder="'+ph('武侯区附近','Near Wuhou District')+'"></div>'
     +'<button class="btn-red" onclick="addFood()">＋ '+(LANG==='zh'?'添加':'Add')+'</button>'
     +'</div>';
 }
@@ -1928,6 +1978,7 @@ try{
     doLogin();
   }
 }catch(e){}
+
 
 
 
