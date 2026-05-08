@@ -448,7 +448,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15p
       <button class="login-demo-btn" onclick="(function(){try{document.getElementById('inviteInput').value='DEMO';doLogin();}catch(e){document.getElementById('loginErrMsg').textContent='Error: '+e.message;}})()">体验 Demo · Try Demo</button>
       <button class="login-demo-btn" style="margin-top:6px;font-size:8px;opacity:0.3" onclick="(function(){try{clearStorage();}catch(e){location.reload();}})()">清除缓存 · Clear cache</button>
     </div>
-    <div class="login-footer">v1.8 · 京都和纸</div>
+    <div class="login-footer">v1.9 · 京都和纸</div>
   </div>
 
   <!-- STATUS BAR -->
@@ -502,6 +502,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15p
 </div>
 
 <script>
+
+
 
 // ============ LANG ============
 var LANG='zh';
@@ -725,8 +727,8 @@ function hotelsOverlap(hotels){
 function getCurrency(){return D().currency||'CNY';}
 
 // ============ NAV ============
-var TAB_KEYS=['overview','schedule','prepare','budget','more'];
-var PREPARE_TABS=['places','stay','luggage'];
+var TAB_KEYS=['overview','schedule','prepare','food','budget'];
+var PREPARE_TABS=['places','stay','transport','luggage'];
 var S_prepareSub=S_prepareSub||'places';
 function addDest(){
   var cn=prompt(LANG==='zh'?'目的地名称（中文）：':'Destination name:');
@@ -882,6 +884,8 @@ function addTransport(){
   save();render();
 }
 function delTransport(id,e){e.stopPropagation();D().transport=D().transport.filter(function(t){return t.id!==id;});save();render();}
+function updTpCost(el){var id=el.dataset.id;var tp=D().transport.find(function(t){return t.id===id;});if(tp){tp.cost=parseFloat(el.value)||0;save();}}
+function updTpPayer(el){var id=el.dataset.id;var tp=D().transport.find(function(t){return t.id===id;});if(tp){tp.payer=el.value;save();}}
 
 // ============ FOOD ============
 function tglFood(id){var r=D().restaurants.find(function(x){return x.id===id;});if(r){r.eaten=!r.eaten;save();render();}}
@@ -1152,8 +1156,8 @@ try {
 
 // ============ RENDER ENGINE · WASHI ============
 
-var TAB_KEYS=['overview','schedule','prepare','budget','more'];
-var PREPARE_TABS=['places','stay','luggage'];
+var TAB_KEYS=['overview','schedule','prepare','food','budget'];
+var PREPARE_TABS=['places','stay','transport','luggage'];
 var S_prepareSub=S_prepareSub||'places';
 
 // SVG icons
@@ -1236,7 +1240,7 @@ function selT(k) {
   render();
 }
 function selPrep(sub){S.prepareSub=sub;render();}
-function goFlow(tab,sub){S.tab=tab;if(tab==='prepare'&&sub)S.prepareSub=sub;if(tab==='more'&&sub)S.moreSub=sub;renderTabs();render();}
+function goFlow(tab,sub){S.tab=tab;if(tab==='prepare'&&sub)S.prepareSub=sub;renderTabs();render();}
 function selD(k) { S.dest=k; save(); renderChips(); render(); }
 
 function render() {
@@ -1251,8 +1255,8 @@ function render() {
     overview: rOverview,
     schedule: rSchedule,
     prepare:  rPrepare,
+    food:     rFood,
     budget:   rBudget,
-    more:     rMore,
   };
   document.getElementById('bd').innerHTML = (fns[S.tab]||rOverview)();
   } catch(err) {
@@ -1289,7 +1293,7 @@ function rOverview() {
   var flowNames = LANG==='zh'
     ?['设定旅行日期','添加景点','添加住宿','添加交通','排行程','选餐厅']
     :['Set travel dates','Add places','Add hotels','Add transport','Build schedule','Find food'];
-  var flowActions = [{tab:'schedule',sub:''},{tab:'prepare',sub:'places'},{tab:'prepare',sub:'stay'},{tab:'more',sub:'transport'},{tab:'schedule',sub:''},{tab:'more',sub:'food'}];
+  var flowActions = [{tab:'schedule',sub:''},{tab:'prepare',sub:'places'},{tab:'prepare',sub:'stay'},{tab:'prepare',sub:'transport'},{tab:'schedule',sub:''},{tab:'food',sub:''}];
   var flowDone = [!!(d.start&&d.end),d.places.length>0,d.hotels.length>0,d.transport.length>0,sTotal>0,d.restaurants.length>0];
   var flowItems = flowNames.map(function(name,i){
     var done = flowDone[i];
@@ -1329,7 +1333,7 @@ function rOverview() {
     // red rule + index
     +'<div style="padding:0 22px">'
     +'<div class="red-rule" style="margin:0 0 8px"></div>'
-    +'<div class="ov-index"><span>I · '+(LANG==='zh'?'概览':'OVERVIEW')+'</span><span style="font-family:var(--mono);font-size:9px;letter-spacing:1px">v1.8</span></div>'
+    +'<div class="ov-index"><span>I · '+(LANG==='zh'?'概览':'OVERVIEW')+'</span><span style="font-family:var(--mono);font-size:9px;letter-spacing:1px">v1.9</span></div>'
     +'</div>'
     // stats
     +statsHtml
@@ -1384,10 +1388,20 @@ function rPlaces() {
 
 // ── SEGMENT TRANSPORT HELPERS ──
 function getSegmentMode(date,from,to){return S.doneItems['seg_'+date+'_'+from+'_'+to]||'';}
+function setSegmentCost(el){
+  var date=el.dataset.date,from=el.dataset.from,to=el.dataset.to;
+  var key='segcost_'+date+'_'+from+'_'+to;
+  S.doneItems[key]=el.value;
+  // Sync cost to transport list entry
+  var d=D(),segKey='segtp_'+date+'_'+from+'_'+to;
+  var tp=d.transport.find(function(t){return t.id===segKey;});
+  if(tp){tp.cost=parseFloat(el.value)||0;}
+  save();
+}
 function setSegmentMode(el){
-  var date=el.dataset.date,from=el.dataset.from,to=el.dataset.to,mode=el.dataset.mode;
+  var date=el.dataset.date,from=el.dataset.from,to=el.dataset.to,mode=el.value||el.dataset.mode;
   var key='seg_'+date+'_'+from+'_'+to;
-  S.doneItems[key] = (S.doneItems[key]===mode)?'':mode;
+  S.doneItems[key] = mode;
   // Add to transport list
   var d=D(),segKey='segtp_'+date+'_'+from+'_'+to;
   var icons={walk:'🚶',metro:'🚇',taxi:'🚕',bus:'🚌',rental:'🚗',other:'🚐'};
@@ -1500,6 +1514,17 @@ function rSchedule() {
       +'<input type="time" value="'+depTime+'" data-date="'+day.date+'" data-pid="'+pid+'" data-type="dep" onchange="setItemTime(this)" style="'+tStyle+'">'
       +'</label>'
       +'</div>';
+    var _costKey2='cost_'+day.date+'_'+pid;
+    var _payKey2='payer_'+day.date+'_'+pid;
+    var _itemCost=S.doneItems[_costKey2]||'';
+    var _itemPayer=S.doneItems[_payKey2]||'';
+    var _payOpts2='<option value="">'+(LANG==='zh'?'谁付':'Paid by')+'</option>'
+      +members.map(function(m){return '<option value="'+m.id+'"'+(_itemPayer===m.id?' selected':'')+'>'+m.name+'</option>';}).join('');
+    var costRow='<div style="display:flex;gap:8px;margin-top:6px;align-items:center">'
+      +'<span style="font-family:var(--mono);font-size:8px;letter-spacing:1px;color:var(--muted)">'+(LANG==='zh'?'费用':'COST')+'</span>'
+      +'<input type="number" placeholder="0" value="'+_itemCost+'" style="font-family:var(--mono);font-size:11px;padding:3px 6px;border:1px solid var(--hair2);background:var(--bg);color:var(--ink);width:80px;text-align:right" onchange="setItemCost(this)" data-date="'+day.date+'" data-pid="'+pid+'">'
+      +'<select style="font-family:var(--mono);font-size:11px;padding:3px 4px;border:1px solid var(--hair2);background:var(--bg);color:var(--ink)" onchange="setItemPayer(this)" data-date="'+day.date+'" data-pid="'+pid+'">'+_payOpts2+'</select>'
+      +'</div>';
 
     var kindColors = {sight:'var(--red)',food:'#8B5E14',transit:'var(--muted)'};
     var kindCol = kindColors[itemIco]||'var(--red)';
@@ -1524,30 +1549,38 @@ function rSchedule() {
 
   });
   // Build connector rows between items
-  var _mi={walk:'🚶',metro:'🚇',taxi:'🚕',bus:'🚌',rental:'🚗',other:'🚐'};
-  var _ml={'walk':LANG==='zh'?'步行':'Walk','metro':LANG==='zh'?'地铁':'Metro',
-           'taxi':LANG==='zh'?'滴滴':'DiDi','bus':LANG==='zh'?'巴士':'Bus',
-           'rental':LANG==='zh'?'租车':'Rental','other':LANG==='zh'?'其他':'Other'};
-  var _mAll=['walk','metro','taxi','bus','rental','other'];
+  // ── Connector rows (dropdown + cost) ──
+  var _mOpts=['walk','metro','taxi','bus','rental','other'].map(function(_m){
+    var _lbl={walk:LANG==='zh'?'🚶 步行':'🚶 Walk',
+              metro:LANG==='zh'?'🚇 地铁':'🚇 Metro',
+              taxi:LANG==='zh'?'🚕 滴滴/出租':'🚕 DiDi/Taxi',
+              bus:LANG==='zh'?'🚌 巴士':'🚌 Bus',
+              rental:LANG==='zh'?'🚗 租车':'🚗 Car rental',
+              other:LANG==='zh'?'🚐 其他':'🚐 Other'};
+    return '<option value="'+_m+'">'+(_lbl[_m]||_m)+'</option>';
+  }).join('');
   var _parts=[];
   tlItemsArr.forEach(function(itm,ci){
     _parts.push(itm);
     if(ci<day.placeIds.length-1){
       var _f=day.placeIds[ci],_t=day.placeIds[ci+1];
-      var _c=getSegmentMode(day.date,_f,_t);
-      var _btns=_mAll.map(function(_m){
-        var _a=_c===_m;
-        return '<button style="padding:3px 7px;border:1px solid '+(_a?'var(--red)':'var(--hair2)')+';background:'+(_a?'var(--red)':'transparent')+';color:'+(_a?'white':'var(--muted)')+';font-size:13px;cursor:pointer" onclick="setSegmentMode(this)" data-date="'+day.date+'" data-from="'+_f+'" data-to="'+_t+'" data-mode="'+_m+'">'+(_mi[_m]||_m)+'</button>';
-      }).join('');
-      _parts.push('<div style="display:flex;align-items:center;gap:6px;padding:5px 0 5px 52px;border-bottom:1px dashed var(--hair)">'
-        +(_c?'<span style="font-family:var(--mono);font-size:10px;color:var(--red)">'+(_mi[_c]||'')+' '+(_ml[_c]||_c)+'</span>'
-             :'<span style="font-family:var(--mono);font-size:9px;color:var(--muted)">'+(LANG==="zh"?"车程":"转乘")+'</span>')
-        +'<div style="display:flex;gap:3px">'+_btns+'</div>'
-        +'</div>');
+      var _cur=getSegmentMode(day.date,_f,_t);
+      var _costKey='segcost_'+day.date+'_'+_f+'_'+_t;
+      var _cost=S.doneItems[_costKey]||'';
+      var _selStyle='font-family:var(--mono);font-size:11px;padding:4px 6px;border:1px solid var(--hair2);background:var(--bg);color:'+(_cur?'var(--red)':'var(--muted)')+';cursor:pointer;max-width:140px';
+      var _inpStyle='font-family:var(--mono);font-size:11px;padding:4px 6px;border:1px solid var(--hair2);background:var(--bg);color:var(--ink);width:80px;text-align:right';
+      _parts.push(
+        '<div style="display:flex;align-items:center;gap:8px;padding:6px 0 6px 52px;border-bottom:1px dashed var(--hair)">'
+        +'<select style="'+_selStyle+'" onchange="setSegmentMode(this)" data-date="'+day.date+'" data-from="'+_f+'" data-to="'+_t+'">'
+        +'<option value="">'+(LANG==='zh'?'车程...':'转乘...')+'</option>'
+        +_mOpts.replace('value="'+_cur+'"','value="'+_cur+'" selected')
+        +'</select>'
+        +'<input type="number" placeholder="'+getCurrency()+'" value="'+_cost+'" style="'+_inpStyle+'" onchange="setSegmentCost(this)" data-date="'+day.date+'" data-from="'+_f+'" data-to="'+_t+'">'
+        +'</div>'
+      );
     }
   });
   var tlItems=_parts.join('');
-  // (end connector block)
 
 
   var chapterDate = new Date(day.date+'T12:00:00');
@@ -1576,6 +1609,40 @@ function rSchedule() {
 }
 
 function setSchedDay(i) { S.schedDay=i; render(); }
+function setItemCost(el) {
+  var date=el.dataset.date, pid=el.dataset.pid;
+  var costKey='cost_'+date+'_'+pid;
+  S.doneItems[costKey]=el.value;
+  // Sync to expenses
+  var expId='sched_'+date+'_'+pid;
+  var d=D();
+  var existing=d.expenses.find(function(e){return e.id===expId;});
+  if(el.value&&parseFloat(el.value)>0){
+    var payKey='payer_'+date+'_'+pid;
+    var payer=S.doneItems[payKey]||(members[0]?members[0].id:'');
+    if(existing){existing.amount=parseFloat(el.value);existing.payer=payer;}
+    else{
+      // Determine item name
+      var pid2=pid;
+      var isR=pid2.indexOf('r_')===0,isT=pid2.indexOf('t_')===0;
+      var name=isR?(d.restaurants.find(function(r){return 'r_'+r.id===pid2;})||{}).cn||pid2
+               :isT?(d.transport.find(function(t){return 't_'+t.id===pid2;})||{}).cn||pid2
+               :(d.places.find(function(p){return p.id===pid2;})||{}).cn||pid2;
+      d.expenses.push({id:expId,cat:'t',cn:name,en:name,amount:parseFloat(el.value),payer:payer,split:'all'});
+    }
+  } else if(existing){
+    d.expenses=d.expenses.filter(function(e){return e.id!==expId;});
+  }
+  save();
+}
+function setItemPayer(el) {
+  var date=el.dataset.date, pid=el.dataset.pid;
+  S.doneItems['payer_'+date+'_'+pid]=el.value;
+  var expId='sched_'+date+'_'+pid;
+  var existing=D().expenses.find(function(e){return e.id===expId;});
+  if(existing) existing.payer=el.value;
+  save();
+}
 function setItemTime(el) {
   var date = el.dataset.date;
   var pid  = el.dataset.pid;
@@ -1634,13 +1701,19 @@ function rTransport() {
   ].map(function(o){return'<option value="'+o.v+'">'+o.l+'</option>';}).join('');
 
   var items = d.transport.map(function(tp){
-    return '<div class="tp-item">'
+    var po=members.map(function(m){
+      return '<option value="'+m.id+'"'+(tp.payer===m.id?' selected':'')+'>'+m.name+'</option>';
+    }).join('');
+    var costInput='<input type="number" value="'+(tp.cost>0?tp.cost:'')+'" style="width:70px;font-family:var(--mono);font-size:11px;padding:3px 5px;border:1px solid var(--hair2);background:var(--bg);color:var(--ink);text-align:right" onchange="updTpCost(this)" data-id="'+tp.id+'">';
+    var payerSel='<select style="font-family:var(--mono);font-size:10px;padding:3px;border:1px solid var(--hair2);background:var(--bg);color:var(--ink)" onchange="updTpPayer(this)" data-id="'+tp.id+'">'
+      +'<option value="">'+(LANG==='zh'?'谁付':'Paid')+'</option>'+po+'</select>';
+    return '<div class="tp-item" style="flex-wrap:wrap;row-gap:6px">'
       +'<div class="tp-icon-box">'+(TICONS[tp.type]||'🚐')+'</div>'
-      +'<div style="flex:1"><div class="tp-name">'+tn(tp)+'</div>'
+      +'<div style="flex:1;min-width:0"><div class="tp-name">'+tn(tp)+'</div>'
       +(tp.detail?'<div class="tp-sub">'+tp.detail+'</div>':'')
       +(tp.date?'<div class="tp-sub">'+fmtDate(tp.date)+'</div>':'')+'</div>'
-      +(tp.cost>0?'<div class="tp-cost">'+getCurrency()+' '+tp.cost.toLocaleString()+'</div>':'')
-      +'<button class="del-btn" onclick="delTransport(\''+tp.id+'\',event)">&#xD7;</button>'
+      +'<div style="display:flex;align-items:center;gap:5px;flex-shrink:0">'+costInput+payerSel+'</div>'
+      +'<button class="del-btn" onclick="delTransport(this.dataset.id,event)" data-id="'+tp.id+'">&#xD7;</button>'
       +'</div>';
   }).join('')||'<div style="padding:28px 22px;font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted)">'+(LANG==='zh'?'未添加交通':'NO TRANSPORT ADDED')+'</div>';
 
@@ -1727,9 +1800,10 @@ function rLuggage() {
 function rPrepare() {
   var sub = S.prepareSub || 'places';
   var tabs = [
-    {k:'places',  zh:'景点', en:'Sights'},
-    {k:'stay',    zh:'住宿', en:'Stay'},
-    {k:'luggage', zh:'行李', en:'Luggage'},
+    {k:'places',    zh:'景点', en:'Sights'},
+    {k:'stay',      zh:'住宿', en:'Stay'},
+    {k:'transport', zh:'交通', en:'Transport'},
+    {k:'luggage',   zh:'行李', en:'Luggage'},
   ];
   var tabBar = '<div style="display:flex;border-bottom:1px solid var(--hair);background:var(--bg)">'
     +tabs.map(function(t){
@@ -1741,7 +1815,7 @@ function rPrepare() {
       return '<button style="'+bStyle+'" onclick="selPrep(this.dataset.k)" data-k="'+t.k+'">'
         +(LANG==='zh'?t.zh:t.en)+'</button>';
     }).join('')+'</div>';
-  var content = sub==='places'?rPlaces():sub==='stay'?rStay():rLuggage();
+  var content = sub==='places'?rPlaces():sub==='stay'?rStay():sub==='transport'?rTransport():rLuggage();
   return tabBar + content;
 }
 
@@ -1971,6 +2045,8 @@ try{
     doLogin();
   }
 }catch(e){}
+
+
 
 
 
