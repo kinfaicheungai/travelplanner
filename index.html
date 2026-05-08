@@ -448,7 +448,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15p
       <button class="login-demo-btn" onclick="(function(){try{document.getElementById('inviteInput').value='DEMO';doLogin();}catch(e){document.getElementById('loginErrMsg').textContent='Error: '+e.message;}})()">体验 Demo · Try Demo</button>
       <button class="login-demo-btn" style="margin-top:6px;font-size:8px;opacity:0.3" onclick="(function(){try{clearStorage();}catch(e){location.reload();}})()">清除缓存 · Clear cache</button>
     </div>
-    <div class="login-footer">v1.6 · 京都和纸</div>
+    <div class="login-footer">v1.7 · 京都和纸</div>
   </div>
 
   <!-- STATUS BAR -->
@@ -502,6 +502,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15p
 </div>
 
 <script>
+
 
 
 
@@ -1241,10 +1242,8 @@ function selT(k) {
   renderTabs();
   render();
 }
-function selPrep(sub) {
-  S.prepareSub=sub;
-  render();
-}
+function selPrep(sub){S.prepareSub=sub;render();}
+function goFlow(tab,sub){S.tab=tab;if(tab==='prepare'&&sub)S.prepareSub=sub;if(tab==='more'&&sub)S.moreSub=sub;renderTabs();render();}
 function selD(k) { S.dest=k; save(); renderChips(); render(); }
 
 function render() {
@@ -1268,6 +1267,7 @@ function render() {
   }
 }
 
+function ph(zh_txt, en_txt){ return LANG==='zh' ? '例：'+zh_txt : 'e.g. '+en_txt; }
 // ── OVERVIEW ──
 function rOverview() {
   // Safety: if dest has no data at all, show empty state with helper
@@ -1288,7 +1288,7 @@ function rOverview() {
   var nights = nightsBetween(d.start,d.end);
   var total = d.expenses.reduce(function(s,e){return s+e.amount;},0);
   var cur = getCurrency();
-  var curSym = cur==='CNY'?'¥':cur==='JPY'?'J¥':cur==='HKD'?'HK$':cur==='AUD'?'A$':'$';
+  var curSym = cur==='CNY'?'¥':cur==='JPY'?'J¥':cur==='HKD'?'HK$':cur==='AUD'?'A$':cur==='EUR'?'€':cur==='GBP'?'£':cur==='SGD'?'SG$':'$';
   var destName = LANG==='zh'?d.cn:d.en;
   var pct = sTotal?Math.round(sDone/sTotal*100):0;
 
@@ -1296,12 +1296,12 @@ function rOverview() {
   var flowNames = LANG==='zh'
     ?['设定旅行日期','添加景点','添加住宿','添加交通','排行程','选餐厅']
     :['Set travel dates','Add places','Add hotels','Add transport','Build schedule','Find food'];
-  var flowTabs = ['schedule','places','stay','transport','schedule','food'];
+  var flowActions = [{tab:'schedule',sub:''},{tab:'prepare',sub:'places'},{tab:'prepare',sub:'stay'},{tab:'more',sub:'transport'},{tab:'schedule',sub:''},{tab:'more',sub:'food'}];
   var flowDone = [!!(d.start&&d.end),d.places.length>0,d.hotels.length>0,d.transport.length>0,sTotal>0,d.restaurants.length>0];
   var flowItems = flowNames.map(function(name,i){
     var done = flowDone[i];
-    var tidx = TAB_KEYS.indexOf(flowTabs[i]);
-    return '<div class="flow-item" onclick="selT(\''+flowTabs[i]+'\')">'
+    var act = flowActions[i];
+    return '<div class="flow-item" onclick="goFlow(this.dataset.tab,this.dataset.sub)" data-tab="'+act.tab+'" data-sub="'+act.sub+'"">'
       +'<div class="flow-n">'+(done?'✓':(i+1))+'</div>'
       +'<div style="flex:1"><div class="flow-label">'+name+'</div></div>'
       +(done?'<div class="flow-done">'+ico('check',14,'var(--red)')+'</div>'
@@ -1336,7 +1336,7 @@ function rOverview() {
     // red rule + index
     +'<div style="padding:0 22px">'
     +'<div class="red-rule" style="margin:0 0 8px"></div>'
-    +'<div class="ov-index"><span>I · '+(LANG==='zh'?'概览':'OVERVIEW')+'</span><span style="font-family:var(--mono);font-size:9px;letter-spacing:1px">v1.1</span></div>'
+    +'<div class="ov-index"><span>I · '+(LANG==='zh'?'概览':'OVERVIEW')+'</span><span style="font-family:var(--mono);font-size:9px;letter-spacing:1px">v1.7</span></div>'
     +'</div>'
     // stats
     +statsHtml
@@ -1730,7 +1730,7 @@ function rBudget() {
   var bal = calcBal(); var txns = calcSettle(bal);
   var total = exps.reduce(function(s,e){return s+e.amount;},0);
   var cur = getCurrency();
-  var curSym = cur==='CNY'?'¥':cur==='JPY'?'J¥':cur==='HKD'?'HK$':cur==='AUD'?'A$':'$';
+  var curSym = cur==='CNY'?'¥':cur==='JPY'?'J¥':cur==='HKD'?'HK$':cur==='AUD'?'A$':cur==='EUR'?'€':cur==='GBP'?'£':cur==='SGD'?'SG$':'$';
   var half = total/Math.max(1,members.length);
   var CURRENCIES = ['HKD','CNY','AUD','USD','EUR','GBP','JPY','SGD'];
   var curOpts = CURRENCIES.map(function(c){return'<option value="'+c+'"'+(c===cur?' selected':'')+'>'+c+'</option>';}).join('');
@@ -1928,6 +1928,7 @@ try{
     doLogin();
   }
 }catch(e){}
+
 
 
 
