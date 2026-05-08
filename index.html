@@ -503,39 +503,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15p
 
 <script>
 
-
-
-
-
-
-  // Insert transport connectors between items
-  var mIcons={walk:'🚶',metro:'🚇',taxi:'🚕',bus:'🚌',rental:'🚗',other:'🚐'};
-  var mZh={walk:'步行',metro:'地铁',taxi:'滴滴',bus:'巴士',rental:'租车',other:'其他'};
-  var mEn={walk:'Walk',metro:'Metro',taxi:'DiDi',bus:'Bus',rental:'Rental',other:'Other'};
-  var mList=['walk','metro','taxi','bus','rental','other'];
-  var mLbl=LANG==='zh'?mZh:mEn;
-  var tlParts=[];
-  tlItemsArr.forEach(function(item,i){
-    tlParts.push(item);
-    if(i<day.placeIds.length-1){
-      var fp=day.placeIds[i],tp=day.placeIds[i+1];
-      var cur=getSegmentMode(day.date,fp,tp);
-      var modeBtns=mList.map(function(m){
-        var active=cur===m;
-        var bs='padding:3px 7px;border:1px solid '+(active?'var(--red)':'var(--hair2)')+';background:'+(active?'var(--red)':'transparent')+';color:'+(active?'white':'var(--muted)')+';font-size:12px;cursor:pointer;line-height:1';
-        return '<button style="'+bs+'" onclick="setSegmentMode(this)" data-date="'+day.date+'" data-from="'+fp+'" data-to="'+tp+'" data-mode="'+m+'">'+(mIcons[m]||m)+'</button>';
-      }).join('');
-      var connector='<div style="display:flex;align-items:center;gap:8px;padding:5px 0 5px 52px;border-bottom:1px dashed var(--hair)">'
-        +(cur?'<span style="font-family:var(--mono);font-size:10px;color:var(--red);letter-spacing:1px">'+(mIcons[cur]||'')+' '+(mLbl[cur]||cur)+'</span>':'<span style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px">'+(LANG==="zh"?"车程":"转乘")+'</span>')
-        +'<div style="display:flex;gap:3px">'+modeBtns+'</div>'
-        +'</div>';
-      tlParts.push(connector);
-    }
-  });
-  var tlItems=tlParts.join('');
-
-
-
 // ============ LANG ============
 var LANG='zh';
 var I18N={
@@ -1163,7 +1130,6 @@ function logout() {
 // Load lang + theme preference
 try { var _lang = localStorage.getItem('wp4_lang'); if(_lang) LANG = _lang; } catch(e) {}
 try { var _thm = localStorage.getItem('wp4_theme'); if(_thm) THEME = _thm; } catch(e) {}
-applyTheme();
 document.getElementById('langBtn').textContent = LANG === 'zh' ? 'EN' : '中文';
 var _ht = document.getElementById('heroTitle');
 if (_ht) _ht.innerHTML = L('heroMain') + '<em>' + L('heroEm') + '</em>';
@@ -1480,7 +1446,7 @@ function rSchedule() {
   // timeline items
   var firstHotel = hotels.length ? hotels[0] : null;
     // Build timeline items: supports places (p_/plain), restaurants (r_), transport (t_)
-  var tlItems = day.placeIds.map(function(pid,i){
+  var tlItemsArr = day.placeIds.map(function(pid,i){
     var itemName='', itemSub='', itemKind='', itemDist='', itemDone=false, itemIco='sight';
     var isRest = pid.indexOf('r_')===0;
     var isTp   = pid.indexOf('t_')===0;
@@ -1555,7 +1521,34 @@ function rSchedule() {
       +'</div>'
       +'<button class="del-btn" style="font-size:15px;padding:0 4px;margin-top:14px" onclick="removeFromDay(this.dataset.date,this.dataset.pid,event)" data-date="'+day.date+'" data-pid="'+pid+'">&#xD7;</button>'
       +'</div>';
-  }).join('');
+
+  });
+  // Build connector rows between items
+  var _mi={walk:'🚶',metro:'🚇',taxi:'🚕',bus:'🚌',rental:'🚗',other:'🚐'};
+  var _ml={'walk':LANG==='zh'?'步行':'Walk','metro':LANG==='zh'?'地铁':'Metro',
+           'taxi':LANG==='zh'?'滴滴':'DiDi','bus':LANG==='zh'?'巴士':'Bus',
+           'rental':LANG==='zh'?'租车':'Rental','other':LANG==='zh'?'其他':'Other'};
+  var _mAll=['walk','metro','taxi','bus','rental','other'];
+  var _parts=[];
+  tlItemsArr.forEach(function(itm,ci){
+    _parts.push(itm);
+    if(ci<day.placeIds.length-1){
+      var _f=day.placeIds[ci],_t=day.placeIds[ci+1];
+      var _c=getSegmentMode(day.date,_f,_t);
+      var _btns=_mAll.map(function(_m){
+        var _a=_c===_m;
+        return '<button style="padding:3px 7px;border:1px solid '+(_a?'var(--red)':'var(--hair2)')+';background:'+(_a?'var(--red)':'transparent')+';color:'+(_a?'white':'var(--muted)')+';font-size:13px;cursor:pointer" onclick="setSegmentMode(this)" data-date="'+day.date+'" data-from="'+_f+'" data-to="'+_t+'" data-mode="'+_m+'">'+(_mi[_m]||_m)+'</button>';
+      }).join('');
+      _parts.push('<div style="display:flex;align-items:center;gap:6px;padding:5px 0 5px 52px;border-bottom:1px dashed var(--hair)">'
+        +(_c?'<span style="font-family:var(--mono);font-size:10px;color:var(--red)">'+(_mi[_c]||'')+' '+(_ml[_c]||_c)+'</span>'
+             :'<span style="font-family:var(--mono);font-size:9px;color:var(--muted)">'+(LANG==="zh"?"车程":"转乘")+'</span>')
+        +'<div style="display:flex;gap:3px">'+_btns+'</div>'
+        +'</div>');
+    }
+  });
+  var tlItems=_parts.join('');
+  // (end connector block)
+
 
   var chapterDate = new Date(day.date+'T12:00:00');
   var chapterLabel = LANG==='zh'
@@ -1978,6 +1971,9 @@ try{
     doLogin();
   }
 }catch(e){}
+
+
+
 
 
 
