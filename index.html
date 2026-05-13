@@ -254,7 +254,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15p
 .hotel-band-txt{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--red);text-transform:uppercase}
 .hotel-band-name{font-family:var(--serif-jp);font-size:13px;font-weight:500;color:var(--ink);margin-left:4px}
 .tl-wrap{padding:0 22px 28px}
-.tl-item{display:flex;gap:14px}
+.tl-item{display:flex;gap:14px;transition:opacity 0.15s}
+.tl-item.drag-over{border-top:2px solid var(--red);}
+.tl-item.dragging{opacity:0.4;}
 .tl-left{width:52px;flex-shrink:0;padding-top:16px}
 .tl-time{font-family:var(--mono);font-size:10px;color:var(--ink2);letter-spacing:0.5px}
 .tl-no{font-family:var(--serif);font-style:italic;font-size:13px;color:var(--red);margin-top:4px}
@@ -448,7 +450,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15p
       <button class="login-demo-btn" onclick="(function(){try{document.getElementById('inviteInput').value='DEMO';doLogin();}catch(e){document.getElementById('loginErrMsg').textContent='Error: '+e.message;}})()">体验 Demo · Try Demo</button>
       <button class="login-demo-btn" style="margin-top:6px;font-size:8px;opacity:0.3" onclick="(function(){try{clearStorage();}catch(e){location.reload();}})()">清除缓存 · Clear cache</button>
     </div>
-    <div class="login-footer">v1.9 · 京都和纸</div>
+    <div class="login-footer" id="appVersion">v2.6 · 京都和纸</div>
   </div>
 
   <!-- STATUS BAR -->
@@ -498,10 +500,39 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15p
     <div class="picker-ftr">
       <button class="btn-red" id="pickerSaveBtn" onclick="savePicker()">确认</button>
     </div>
-  </div>
-</div>
+ <script>
 
-<script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+var APP_VERSION='v3.1';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -707,19 +738,24 @@ function avEl(m,sz){sz=sz||36;return '<div class="mav" style="width:'+sz+'px;hei
 function catPill(c){var cls={f:'cp-f',h:'cp-h',m:'cp-m',t:'cp-t',x:'cp-x'};var ico={f:'✈️',h:'🏨',m:'🍜',t:'🎟️',x:'🚇'};return'<span class="cat-pill '+(cls[c]||'cp-x')+'">'+(ico[c]||c)+'</span>';}
 function hotelForDate(dateStr){
   var d=D();if(!d.hotels)return null;
-  return d.hotels.find(function(h){return h.checkin&&h.checkout&&dateStr>=h.checkin&&dateStr<h.checkout;})||null;
+  return d.hotels.find(function(h){return (h.cin||h.checkin)&&(h.cout||h.checkout)&&dateStr>=(h.cin||h.checkin)&&dateStr<(h.cout||h.checkout);})||null;
 }
 // Returns ALL hotels covering a date (handles rare multi-hotel same day)
 function hotelsForDate(dateStr){
   var d=D();if(!d.hotels)return[];
-  return d.hotels.filter(function(h){return h.checkin&&h.checkout&&dateStr>=h.checkin&&dateStr<h.checkout;});
+  return d.hotels.filter(function(h){
+    var ci=h.cin||h.checkin||'', co=h.cout||h.checkout||'';
+    return ci&&co&&dateStr>=ci&&dateStr<co;
+  });
 }
 function hotelsOverlap(hotels){
   for(var i=0;i<hotels.length;i++){
     for(var j=i+1;j<hotels.length;j++){
       var a=hotels[i],b=hotels[j];
-      if(!a.checkin||!a.checkout||!b.checkin||!b.checkout)continue;
-      if(a.checkin<b.checkout&&b.checkin<a.checkout)return true;
+      var aci=a.cin||a.checkin||'',aco=a.cout||a.checkout||'';
+      var bci=b.cin||b.checkin||'',bco=b.cout||b.checkout||'';
+      if(!aci||!aco||!bci||!bco)continue;
+      if(aci<bco&&bci<aco)return true;
     }
   }
   return false;
@@ -735,7 +771,7 @@ function addDest(){
   if(!cn||!cn.trim())return;
   var en=prompt(LANG==='zh'?'英文名（可选）：':'English name (optional):');
   var id='dest_'+Date.now();
-  dests[id]={id:id,cn:cn.trim(),en:(en||cn).trim(),start:'',end:'',currency:'CNY',hotels:[],places:[],schedule:[],transport:[],restaurants:[],expenses:[]};
+  dests[id]={id:id,cn:cn.trim(),en:(en||cn).trim(),start:'',end:'',currency:'CNY',hotels:[],places:[{id:'place_airport',cn:'机场',en:'Airport',type:'transit',area:'',kh:0,min:0,done:false,isSpecial:true},{id:'place_station',cn:'火车站',en:'Train Station',type:'transit',area:'',kh:0,min:0,done:false,isSpecial:true}],schedule:[],transport:[{id:'tp_airport',type:'flight',cn:'機场接送',en:'Airport Transfer',detail:'',date:'',cost:0},{id:'tp_station',type:'train',cn:'火车站接送',en:'Train Station Transfer',detail:'',date:'',cost:0}],restaurants:[],expenses:[]};
   S.dest=id;save();renderAll();
 }
 function delDest(id,e){
@@ -772,7 +808,7 @@ function addPlace(){
 function buildDays(){
   var d=D();if(!d.start||!d.end)return[];
   var days=[],cur=new Date(d.start+'T12:00:00'),end=new Date(d.end+'T12:00:00');
-  while(cur<end){
+  while(cur<=end){
     var ds=cur.toISOString().slice(0,10);
     var ex=d.schedule.find(function(s){return s.date===ds;});
     if(!ex){ex={date:ds,placeIds:[]};d.schedule.push(ex);}
@@ -804,8 +840,46 @@ function openPicker(date){
   renderPickerList();
   document.getElementById('pickerOverlay').style.display='flex';
 }
+
+function cleanOrphanedExpenses(){
+  var d=D();
+  // Remove sched_ expenses where the schedule item no longer exists
+  var allPids={};
+  d.schedule.forEach(function(day){
+    day.placeIds.forEach(function(pid){
+      allPids['sched_'+day.date+'_'+pid]=true;
+    });
+  });
+  // Remove segtp_ expenses where segment no longer exists
+  var allSegs={};
+  d.schedule.forEach(function(day){
+    for(var i=0;i<day.placeIds.length-1;i++){
+      allSegs['segtp_'+day.date+'_'+day.placeIds[i]+'_'+day.placeIds[i+1]]=true;
+    }
+  });
+  var before=d.expenses.length;
+  d.expenses=d.expenses.filter(function(e){
+    var sid=String(e.id);
+    if(sid.indexOf('sched_')===0) return !!allPids[sid];
+    if(sid.indexOf('segtp_')===0) return !!allSegs[sid];
+    return true; // keep manual entries
+  });
+  var removed=before-d.expenses.length;
+  save();render();
+  if(removed>0) alert((LANG==='zh'?'已清除 ':'Removed ')+removed+(LANG==='zh'?' 条旧数据':' stale entries'));
+}
 function setPickerCat(cat){ S.pickerCat=cat; renderPickerList(); }
 function tglPicker(id){var idx=S.pickerSel.indexOf(id);if(idx>=0)S.pickerSel.splice(idx,1);else S.pickerSel.push(id);renderPickerList();}
+function pickerAddFood(){
+  var inp=document.getElementById('pickerFoodName');
+  if(!inp||!inp.value.trim()) return;
+  var name=inp.value.trim();
+  var newId=String(Date.now());
+  D().restaurants.push({id:newId,cn:name,en:name,loc:'',tag:'',eaten:false});
+  save();
+  inp.value='';
+  renderPickerList();
+}
 function savePicker(){
   var day=D().schedule.find(function(s){return s.date===S.pickerDay;});
   if(day)day.placeIds=S.pickerSel.slice();
@@ -823,13 +897,56 @@ function tglSchedItem(date,pid){
   }
   save();render();
 }
-function removeFromDay(date,pid,e){e.stopPropagation();var day=D().schedule.find(function(s){return s.date===date;});if(day)day.placeIds=day.placeIds.filter(function(p){return p!==pid;});save();render();}
+function removeFromDay(date,pid,e){
+  e.stopPropagation();
+  var d=D();
+  var day=d.schedule.find(function(s){return s.date===date;});
+  if(!day) return;
+  var idx=day.placeIds.indexOf(pid);
+  if(idx<0) return;
+  // Clean up ALL segment keys touching this item
+  // Before pid: placeIds[idx-1] -> pid
+  if(idx>0){
+    var prevPid=day.placeIds[idx-1];
+    var segKey1='seg_'+date+'_'+prevPid+'_'+pid;
+    var segTpKey1='segtp_'+date+'_'+prevPid+'_'+pid;
+    delete S.doneItems[segKey1];
+    delete S.doneItems['segcost_'+date+'_'+prevPid+'_'+pid];
+    delete S.doneItems['segpay_'+date+'_'+prevPid+'_'+pid];
+    // Remove from transport list
+    d.transport=d.transport.filter(function(t){return t.id!==segTpKey1;});
+    // Remove from expenses
+    d.expenses=d.expenses.filter(function(ex){return ex.id!==segTpKey1;});
+  }
+  // After pid: pid -> placeIds[idx+1]
+  if(idx<day.placeIds.length-1){
+    var nextPid=day.placeIds[idx+1];
+    var segKey2='seg_'+date+'_'+pid+'_'+nextPid;
+    var segTpKey2='segtp_'+date+'_'+pid+'_'+nextPid;
+    delete S.doneItems[segKey2];
+    delete S.doneItems['segcost_'+date+'_'+pid+'_'+nextPid];
+    delete S.doneItems['segpay_'+date+'_'+pid+'_'+nextPid];
+    d.transport=d.transport.filter(function(t){return t.id!==segTpKey2;});
+    d.expenses=d.expenses.filter(function(ex){return ex.id!==segTpKey2;});
+  }
+  // Remove own schedule expense
+  var ownExpId='sched_'+date+'_'+pid;
+  d.expenses=d.expenses.filter(function(ex){return ex.id!==ownExpId;});
+  // Remove timing data
+  delete S.doneItems['arr_'+date+'_'+pid];
+  delete S.doneItems['dep_'+date+'_'+pid];
+  delete S.doneItems['cost_'+date+'_'+pid];
+  delete S.doneItems['payer_'+date+'_'+pid];
+  // Remove item from day
+  day.placeIds=day.placeIds.filter(function(p){return p!==pid;});
+  save();render();
+}
 
 // ============ HOTELS ============
 function addHotel(){
   var cn=document.getElementById('hcn');
-  var ciEl=document.getElementById('hci');
-  var coEl=document.getElementById('hco');
+  var ciEl=document.getElementById('hcin');
+  var coEl=document.getElementById('hcout');
   cn.classList.remove('err');ciEl.classList.remove('err');coEl.classList.remove('err');
   var ok=true;
   if(!cn.value.trim()){cn.classList.add('err');ok=false;}
@@ -843,7 +960,7 @@ function addHotel(){
   if(!ok)return;
   var en=document.getElementById('hen').value.trim();
   var id='h_'+Date.now();
-  var newH={id:id,cn:cn.value.trim(),en:en||cn.value.trim(),checkin:ci,checkout:co};
+  var newH={id:id,cn:cn.value.trim(),en:en||cn.value.trim(),cin:ci,cout:co};
   var d=D();
   var testHotels=d.hotels.concat([newH]);
   if(hotelsOverlap(testHotels)){
@@ -884,8 +1001,42 @@ function addTransport(){
   save();render();
 }
 function delTransport(id,e){e.stopPropagation();D().transport=D().transport.filter(function(t){return t.id!==id;});save();render();}
-function updTpCost(el){var id=el.dataset.id;var tp=D().transport.find(function(t){return t.id===id;});if(tp){tp.cost=parseFloat(el.value)||0;save();}}
-function updTpPayer(el){var id=el.dataset.id;var tp=D().transport.find(function(t){return t.id===id;});if(tp){tp.payer=el.value;save();}}
+function updTpCost(el){
+  var id=el.dataset.id;
+  var d=D();
+  var tp=d.transport.find(function(t){return t.id===id;});
+  if(!tp)return;
+  tp.cost=parseFloat(el.value)||0;
+  // Sync to expenses
+  var ex=d.expenses.find(function(e){return e.id===id;});
+  if(ex){ex.amount=tp.cost;}
+  else if(tp.cost>0&&tp.payer&&tp.payer!=='self'){
+    d.expenses.push({id:id,cat:'x',cn:tp.cn||tp.en,en:tp.en||tp.cn,amount:tp.cost,payer:tp.payer,split:'all',date:tp.date||''});
+  }
+  // Sync to S.doneItems for schedule connector display
+  if(id.indexOf('segtp_')===0){
+    var sm=id.match(/^segtp_(.+)_(.+)_(.+)$/);
+    if(sm)S.doneItems['segcost_'+sm[1]+'_'+sm[2]+'_'+sm[3]]=String(tp.cost);
+  }
+  save();render();
+}
+function updTpPayer(el){
+  var id=el.dataset.id;
+  var d=D();
+  var tp=d.transport.find(function(t){return t.id===id;});
+  if(!tp)return;
+  tp.payer=el.value;
+  var ex=d.expenses.find(function(e){return e.id===id;});
+  if(ex){ex.payer=tp.payer;}
+  else if(tp.cost>0&&tp.payer&&tp.payer!=='self'){
+    d.expenses.push({id:id,cat:'x',cn:tp.cn||tp.en,en:tp.en||tp.cn,amount:tp.cost,payer:tp.payer,split:'all',date:tp.date||''});
+  }
+  if(id.indexOf('segtp_')===0){
+    var sm2=id.match(/^segtp_(.+)_(.+)_(.+)$/);
+    if(sm2)S.doneItems['segpay_'+sm2[1]+'_'+sm2[2]+'_'+sm2[3]]=tp.payer;
+  }
+  save();render();
+}
 
 // ============ FOOD ============
 function tglFood(id){var r=D().restaurants.find(function(x){return x.id===id;});if(r){r.eaten=!r.eaten;save();render();}}
@@ -919,10 +1070,22 @@ function setCurrency(v){D().currency=v;save();render();}
 function calcBal(){
   var bal={};members.forEach(function(m){bal[m.id]=0;});
   D().expenses.forEach(function(e){
-    var sm=e.split==='all'?members.map(function(m){return m.id;}):[e.split];
+    // Skip unassigned (payer='') and self-paid (payer='self')
+    if(!e.payer || e.payer==='' || e.payer==='self') return;
+    // Skip zero amounts
+    if(!e.amount || e.amount===0) return;
+    // Determine who shares the cost
+    var sm;
+    if(e.split==='all') sm=members.map(function(m){return m.id;});
+    else if(e.split && e.split!=='all') sm=[e.split];
+    else sm=members.map(function(m){return m.id;});
     var sh=e.amount/sm.length;
-    bal[e.payer]=(bal[e.payer]||0)+e.amount;
-    sm.forEach(function(id){bal[id]=(bal[id]||0)-sh;});
+    // Only credit valid members
+    var payerIsValid=members.some(function(m){return m.id===e.payer;});
+    if(payerIsValid) bal[e.payer]=(bal[e.payer]||0)+e.amount;
+    sm.forEach(function(id){
+      if(bal.hasOwnProperty(id)) bal[id]-=sh;
+    });
   });
   return bal;
 }
@@ -934,13 +1097,81 @@ function calcSettle(bal){
     else if(v<-0.5)neg.push({name:m.name,col:m.col,amt:-v});
   });
   var txns=[],pp=pos.map(function(x){return{name:x.name,col:x.col,amt:x.amt};}),nn=neg.map(function(x){return{name:x.name,col:x.col,amt:x.amt};});
-  while(pp.length&&nn.length){var g=nn[0],r=pp[0],a=Math.min(g.amt,r.amt);txns.push({from:g,to:r,amt:a});g.amt-=a;r.amt-=a;if(g.amt<0.5)nn.shift();if(r.amt<0.5)pp.shift();}
+  while(pp.length&&nn.length){var g=nn[0],r=pp[0],a=Math.min(g.amt,r.amt);txns.push({from:g,to:r,amt:Math.round(a*100)/100});g.amt-=a;r.amt-=a;if(g.amt<0.5)nn.shift();if(r.amt<0.5)pp.shift();}
   return txns;
 }
-function chgPayer(id,v){var e=D().expenses.find(function(e){return e.id===id;});if(e)e.payer=v;save();render();}
-function chgSplit(id,v){var e=D().expenses.find(function(e){return e.id===id;});if(e)e.split=v;save();render();}
-function chgAmt(id,v){var e=D().expenses.find(function(e){return e.id===id;});if(e)e.amount=parseFloat(v)||0;save();render();}
-function delExp(id){D().expenses=D().expenses.filter(function(e){return e.id!==id;});save();render();}
+function chgPayer(el){
+  var id=el.dataset.eid; var v=el.value;
+  var numId=parseFloat(id); if(!isNaN(numId)&&String(numId)===id) id=numId;
+  var e=D().expenses.find(function(e){return e.id===id;});
+  if(!e) return;
+  e.payer=v;
+  var sid=String(id);
+  // Handle segtp_ expenses (transport between schedule items)
+  if(sid.indexOf('segtp_')===0){
+    // segtp_DATE_FROM_TO format - update S.doneItems for connector display
+    var segParts=sid.split('_'); // ['segtp','DATE','FROM','TO'] but FROM/TO may have _
+    // Actually: segtp_+date+'_'+from+'_'+to - complex split, use regex
+    var segMatch=sid.match(/^segtp_([^_]+(?:-[^_]+)*)_(.+)_(.+)$/);
+    if(segMatch){
+      var segDate=segMatch[1],segFrom=segMatch[2],segTo=segMatch[3];
+      S.doneItems['segcost_'+segDate+'_'+segFrom+'_'+segTo]=String(e.amount);
+      var tp2=D().transport.find(function(t){return t.id===sid;});
+      if(tp2) tp2.cost=e.amount;
+    }
+  }
+  if(sid.indexOf('sched_')===0){
+    var parts=sid.split('_');
+    var date=parts[1];
+    var pid=parts.slice(2).join('_');
+    S.doneItems['payer_'+date+'_'+pid]=v;
+    if(pid.indexOf('t_')===0){var tp=D().transport.find(function(t){return t.id===pid.slice(2);});if(tp)tp.payer=v;}
+  }
+  var d2=D();
+  var matchTp=d2.transport.find(function(t){return t.id===id;});
+  if(matchTp){
+    matchTp.payer=v;
+    if(String(id).indexOf('segtp_')===0){
+      var sm3=String(id).match(/^segtp_(.+?)_(.+?)_(.+)$/);
+      if(sm3)S.doneItems['segpay_'+sm3[1]+'_'+sm3[2]+'_'+sm3[3]]=v;
+    }
+  }
+  save();render();
+}
+function chgSplit(el){var id=el.dataset.eid;var v=el.value;var numId=parseFloat(id);if(!isNaN(numId)&&String(numId)===id)id=numId;var e=D().expenses.find(function(e){return e.id===id;});if(e){e.split=v;save();render();}}
+function chgAmt(el){
+  var id=el.dataset.eid; var v=el.value;
+  // Restore numeric id if needed
+  var numId=parseFloat(id); if(!isNaN(numId)&&String(numId)===id) id=numId;
+  var e=D().expenses.find(function(e){return e.id===id;});
+  if(!e) return;
+  e.amount=parseFloat(v)||0;
+  // Sync back to schedule doneItems if sched_ expense
+  var sid=String(id);
+  // Handle segtp_ expenses (transport between schedule items)
+  if(sid.indexOf('segtp_')===0){
+    // segtp_DATE_FROM_TO format - update S.doneItems for connector display
+    var segParts=sid.split('_'); // ['segtp','DATE','FROM','TO'] but FROM/TO may have _
+    // Actually: segtp_+date+'_'+from+'_'+to - complex split, use regex
+    var segMatch=sid.match(/^segtp_([^_]+(?:-[^_]+)*)_(.+)_(.+)$/);
+    if(segMatch){
+      var segDate=segMatch[1],segFrom=segMatch[2],segTo=segMatch[3];
+      S.doneItems['segcost_'+segDate+'_'+segFrom+'_'+segTo]=String(e.amount);
+      var tp2=D().transport.find(function(t){return t.id===sid;});
+      if(tp2) tp2.cost=e.amount;
+    }
+  }
+  if(sid.indexOf('sched_')===0){
+    var parts=sid.split('_');// sched_DATE_PID or sched_DATE_r_ID etc
+    var date=parts[1];
+    var pid=parts.slice(2).join('_');
+    S.doneItems['cost_'+date+'_'+pid]=String(e.amount);
+    // If transport, sync to transport object
+    if(pid.indexOf('t_')===0){var tp=D().transport.find(function(t){return t.id===pid.slice(2);});if(tp)tp.cost=e.amount;}
+  }
+  save();render();
+}
+function delExp(el){var id=el.dataset.eid;var numId=parseFloat(id);if(!isNaN(numId)&&String(numId)===id)id=numId;D().expenses=D().expenses.filter(function(e){return e.id!==id;});save();render();}
 function addExp(){
   var cn=document.getElementById('en');
   var amt=document.getElementById('ea');
@@ -968,12 +1199,11 @@ function addMember(){
 // ---- Config: define your invite codes here ----
 // Format: CODE -> { name, color, feishuSheetId (fill in later) }
 var INVITE_CODES = {
-  'DEMO':    { name:'Demo',   initials:'D',  color:'#1D9E75', feishuSheet: null },
-  'ALEX2026':{ name:'Alex',   initials:'AL', color:'#534AB7', feishuSheet: null },
-  'BLAKE':   { name:'Blake',  initials:'BL', color:'#D85A30', feishuSheet: null },
-  'CASEY':   { name:'Casey',  initials:'CA', color:'#BA7517', feishuSheet: null },
-  // Add more codes here when needed
-  // 'MIKE2026': { name:'Mike', initials:'MI', color:'#185FA5', feishuSheet: null },
+  'DEMO':   { name:'Demo',   initials:'D',  color:'#1D9E75', feishuSheet: 'Demo'   },
+  'KAREN':  { name:'Karen',  initials:'KR', color:'#534AB7', feishuSheet: 'Karen'  },
+  'WUYING': { name:'Wuying', initials:'WY', color:'#D85A30', feishuSheet: 'Wuying' },
+  'ALEX':   { name:'Alex',   initials:'AL', color:'#BA7517', feishuSheet: 'Alex'   },
+  'LULU':   { name:'Lulu',   initials:'LL', color:'#2E86AB', feishuSheet: 'Lulu'   },
 };
 
 // ---- Feishu config (fill in after you register) ----
@@ -1131,6 +1361,22 @@ function logout() {
 
 
 // ============ INIT ============
+// Ensure default transport items exist
+try{
+  var _d=D();
+  if(!_d.places.find(function(p){return p.id==='place_airport';})&&!_d.places.find(function(p){return p.id==='place_station';})){
+    _d.places.unshift({id:'place_station',cn:'火车站',en:'Train Station',type:'transit',area:'',kh:0,min:0,done:false,isSpecial:true});
+    _d.places.unshift({id:'place_airport',cn:'机场',en:'Airport',type:'transit',area:'',kh:0,min:0,done:false,isSpecial:true});
+    save();
+  }
+  if(!_d.transport.find(function(t){return t.id==='tp_airport';})){
+    _d.transport.unshift({id:'tp_station',type:'train',cn:'火车站接送',en:'Train Station',detail:'',date:'',cost:0});
+    _d.transport.unshift({id:'tp_airport',type:'flight',cn:'机场接送',en:'Airport Transfer',detail:'',date:'',cost:0});
+    save();
+  }
+}catch(e){}
+// Update login footer version
+try{var _vEl=document.getElementById('appVersion');if(_vEl)_vEl.textContent=APP_VERSION+' · 京都和纸';}catch(e){}
 // Load lang + theme preference
 try { var _lang = localStorage.getItem('wp4_lang'); if(_lang) LANG = _lang; } catch(e) {}
 try { var _thm = localStorage.getItem('wp4_theme'); if(_thm) THEME = _thm; } catch(e) {}
@@ -1214,7 +1460,7 @@ function renderChips() {
     return '<button class="dest-chip'+a+'" onclick="selD(\''+k+'\')">'
       +lbl+'<span class="dest-chip-x" onclick="delDest(\''+k+'\',event)">&#xD7;</span></button>';
   }).join('');
-  html += '<button class="dest-chip add" onclick="addDest()">'+(LANG==='zh'?'＋ 新增':'＋ Add')+'</button>';
+  html += '<button class="dest-chip add" onclick="addDest()">'+(LANG==='zh'?'＋ 新增旅遊地':'＋ New Dest')+'</button>';
   document.getElementById('destChips').innerHTML = html;
 }
 
@@ -1223,8 +1469,8 @@ function renderTabs() {
     {k:'overview', zh:'总览',  en:'Overview', ic:'overview'},
     {k:'schedule', zh:'行程',  en:'Schedule', ic:'transit'},
     {k:'prepare',  zh:'准备',  en:'Prepare',  ic:'luggage'},
+    {k:'food',     zh:'餐饮',  en:'Food',     ic:'food'},
     {k:'budget',   zh:'账单',  en:'Budget',   ic:'budget'},
-    {k:'more',     zh:'更多',  en:'More',     ic:'food'},
   ];
   var html = defs.map(function(d) {
     var a = S.tab===d.k ? ' active' : '';
@@ -1333,7 +1579,7 @@ function rOverview() {
     // red rule + index
     +'<div style="padding:0 22px">'
     +'<div class="red-rule" style="margin:0 0 8px"></div>'
-    +'<div class="ov-index"><span>I · '+(LANG==='zh'?'概览':'OVERVIEW')+'</span><span style="font-family:var(--mono);font-size:9px;letter-spacing:1px">v1.9</span></div>'
+    +'<div class="ov-index"><span>I · '+(LANG==='zh'?'概览':'OVERVIEW')+'</span><span style="font-family:var(--mono);font-size:9px;letter-spacing:1px">'+ APP_VERSION +'</span></div>'
     +'</div>'
     // stats
     +statsHtml
@@ -1388,14 +1634,43 @@ function rPlaces() {
 
 // ── SEGMENT TRANSPORT HELPERS ──
 function getSegmentMode(date,from,to){return S.doneItems['seg_'+date+'_'+from+'_'+to]||'';}
+function setSegmentPayer(el){
+  var date=el.dataset.date,from=el.dataset.from,to=el.dataset.to;
+  var payer=el.value;
+  S.doneItems['segpay_'+date+'_'+from+'_'+to]=payer;
+  var segKey='segtp_'+date+'_'+from+'_'+to;
+  var d=D();
+  var tp=d.transport.find(function(t){return t.id===segKey;});
+  if(tp)tp.payer=payer;
+  var cost=parseFloat(S.doneItems['segcost_'+date+'_'+from+'_'+to])||0;
+  var existing=d.expenses.find(function(e){return e.id===segKey;});
+  if(cost>0&&payer!=='self'){
+    var tpModeDetail=tp?tp.detail:''; var tpName=tp?(tp.cn||tp.en):(LANG==='zh'?'车程':'Transit'); if(tpModeDetail&&tpModeDetail!==tpName) tpName=tpName+(tpModeDetail?' ['+tpModeDetail+']':'');
+    if(existing){existing.payer=payer;}
+    else{d.expenses.push({id:segKey,cat:'x',cn:tpName,en:tpName,amount:cost,payer:payer,split:'all',date:date});}
+  } else if(existing){
+    d.expenses=d.expenses.filter(function(e){return e.id!==segKey;});
+  }
+  save();
+}
 function setSegmentCost(el){
   var date=el.dataset.date,from=el.dataset.from,to=el.dataset.to;
-  var key='segcost_'+date+'_'+from+'_'+to;
-  S.doneItems[key]=el.value;
-  // Sync cost to transport list entry
-  var d=D(),segKey='segtp_'+date+'_'+from+'_'+to;
+  var segKey='segtp_'+date+'_'+from+'_'+to;
+  S.doneItems['segcost_'+date+'_'+from+'_'+to]=el.value;
+  var d=D();
   var tp=d.transport.find(function(t){return t.id===segKey;});
-  if(tp){tp.cost=parseFloat(el.value)||0;}
+  var cost=parseFloat(el.value)||0;
+  var payer=S.doneItems['segpay_'+date+'_'+from+'_'+to]||'';
+  if(tp){tp.cost=cost;if(payer)tp.payer=payer;}
+  // Sync to expenses
+  var existing=d.expenses.find(function(e){return e.id===segKey;});
+  if(cost>0&&payer!=='self'){
+    var tpModeDetail=tp?tp.detail:''; var tpName=tp?(tp.cn||tp.en):(LANG==='zh'?'车程':'Transit'); if(tpModeDetail&&tpModeDetail!==tpName) tpName=tpName+(tpModeDetail?' ['+tpModeDetail+']':'');
+    if(existing){existing.amount=cost;existing.payer=payer;}
+    else{d.expenses.push({id:segKey,cat:'x',cn:tpName,en:tpName,amount:cost,payer:payer,split:'all',date:date});}
+  } else if(existing){
+    d.expenses=d.expenses.filter(function(e){return e.id!==segKey;});
+  }
   save();
 }
 function setSegmentMode(el){
@@ -1405,18 +1680,107 @@ function setSegmentMode(el){
   // Add to transport list
   var d=D(),segKey='segtp_'+date+'_'+from+'_'+to;
   var icons={walk:'🚶',metro:'🚇',taxi:'🚕',bus:'🚌',rental:'🚗',other:'🚐'};
-  var fromItem=d.places.find(function(x){return x.id===from;})||d.restaurants.find(function(x){return 'r_'+x.id===from;});
-  var toItem=d.places.find(function(x){return x.id===to;})||d.restaurants.find(function(x){return 'r_'+x.id===to;});
-  var fromN=fromItem?(fromItem.cn||fromItem.name):'?';
-  var toN=toItem?(toItem.cn||toItem.name):'?';
+  function _getItemName(pid){
+    if(pid.indexOf('r_')===0){var r=d.restaurants.find(function(x){return 'r_'+x.id===pid;});return r?(r.cn||r.en):pid;}
+    if(pid.indexOf('t_')===0){var t=d.transport.find(function(x){return 't_'+x.id===pid;});return t?(t.cn||t.en):pid;}
+    var p=d.places.find(function(x){return x.id===pid;});return p?(p.cn||p.en):pid;
+  }
+  var fromN=_getItemName(from);
+  var toN=_getItemName(to);
   if(S.doneItems[key]&&!d.transport.find(function(t){return t.id===segKey;})){
     d.transport.push({id:segKey,type:mode==='taxi'?'rideshare':mode==='metro'?'train':mode,
       cn:(icons[mode]||'>')+' '+fromN+' → '+toN,en:(icons[mode]||'>')+' '+fromN+' → '+toN,
-      detail:mode,date:date,cost:0});
+      detail:LANG==='zh'?{walk:'步行',metro:'地铁',taxi:'滴滴/出租',bus:'巴士',rental:'租车',other:'其他'}[mode]||mode:{walk:'Walk',metro:'Metro',taxi:'DiDi',bus:'Bus',rental:'Rental',other:'Other'}[mode]||mode,date:date,cost:0});
   } else if(!S.doneItems[key]){
     d.transport=d.transport.filter(function(t){return t.id!==segKey;});
   }
   save();render();
+}
+
+// ── DRAG TO REORDER SCHEDULE ITEMS ──
+var _dragDate=null, _dragPid=null, _dragIdx=-1;
+
+function tlDragStart(e){
+  var el=e.currentTarget||e.target;
+  while(el&&!el.dataset.pid) el=el.parentElement;
+  if(!el) return;
+  _dragDate=el.dataset.date;
+  _dragPid=el.dataset.pid;
+  _dragIdx=parseInt(el.dataset.idx)||0;
+  el.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain',_dragPid);
+}
+
+function tlDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  var el=e.currentTarget||e.target;
+  while(el&&!el.dataset.pid) el=el.parentElement;
+  if(el&&el.dataset.pid!==_dragPid){
+    document.querySelectorAll('.tl-item').forEach(function(t){t.classList.remove('drag-over');});
+    el.classList.add('drag-over');
+  }
+}
+
+function tlDragEnd(e){
+  document.querySelectorAll('.tl-item').forEach(function(t){
+    t.classList.remove('dragging');
+    t.classList.remove('drag-over');
+  });
+}
+
+function tlDrop(e){
+  e.preventDefault();
+  var el=e.currentTarget||e.target;
+  while(el&&!el.dataset.pid) el=el.parentElement;
+  if(!el||!_dragPid||el.dataset.pid===_dragPid) return;
+  
+  var targetPid=el.dataset.pid;
+  var targetIdx=parseInt(el.dataset.idx)||0;
+  var d=D();
+  var day=d.schedule.find(function(s){return s.date===_dragDate;});
+  if(!day) return;
+  
+  var ids=day.placeIds.slice();
+  var fromIdx=ids.indexOf(_dragPid);
+  var toIdx=ids.indexOf(targetPid);
+  if(fromIdx<0||toIdx<0) return;
+  
+  // Collect all segment keys that will be affected
+  // Any segment touching fromIdx position (before or after)
+  var affectedSegs=[];
+  // Segments involving the dragged item's old position
+  if(fromIdx>0) affectedSegs.push({f:ids[fromIdx-1],t:_dragPid});
+  if(fromIdx<ids.length-1) affectedSegs.push({f:_dragPid,t:ids[fromIdx+1]});
+  // Segments around insertion point
+  if(toIdx>0) affectedSegs.push({f:ids[toIdx-1],t:targetPid});
+  affectedSegs.push({f:_dragPid,t:targetPid});
+  // Also 'start' connector for first position
+  if(fromIdx===0) affectedSegs.push({f:'start',t:_dragPid});
+  if(toIdx===0) affectedSegs.push({f:'start',t:targetPid});
+  
+  // Clear all affected segment data
+  affectedSegs.forEach(function(seg){
+    var sk='seg_'+_dragDate+'_'+seg.f+'_'+seg.t;
+    var ek='segtp_'+_dragDate+'_'+seg.f+'_'+seg.t;
+    delete S.doneItems[sk];
+    delete S.doneItems['segcost_'+_dragDate+'_'+seg.f+'_'+seg.t];
+    delete S.doneItems['segpay_'+_dragDate+'_'+seg.f+'_'+seg.t];
+    d.transport=d.transport.filter(function(t){return t.id!==ek;});
+    d.expenses=d.expenses.filter(function(ex){return ex.id!==ek;});
+  });
+  
+  // Reorder
+  ids.splice(fromIdx,1);
+  var newToIdx=ids.indexOf(targetPid);
+  // Insert before or after target based on drag direction
+  if(fromIdx<toIdx) ids.splice(newToIdx+1,0,_dragPid);
+  else ids.splice(newToIdx,0,_dragPid);
+  day.placeIds=ids;
+  
+  _dragDate=null; _dragPid=null; _dragIdx=-1;
+  save(); render();
 }
 // ── SCHEDULE ──
 function rSchedule() {
@@ -1462,8 +1826,9 @@ function rSchedule() {
     // Build timeline items: supports places (p_/plain), restaurants (r_), transport (t_)
   var tlItemsArr = day.placeIds.map(function(pid,i){
     var itemName='', itemSub='', itemKind='', itemDist='', itemDone=false, itemIco='sight';
-    var isRest = pid.indexOf('r_')===0;
-    var isTp   = pid.indexOf('t_')===0;
+    var isRest  = pid.indexOf('r_')===0;
+    var isTp    = pid.indexOf('t_')===0;
+    var isHotel = pid.indexOf('h_')===0;
 
     if(isRest){
       var rid = pid.slice(2);
@@ -1474,6 +1839,15 @@ function rSchedule() {
       itemKind = LANG==='zh'?'餐饮':'FOOD';
       itemIco  = 'food';
       itemDone = !!r.eaten;
+    } else if(isHotel){
+      var hid2 = pid.slice(2);
+      var h2 = d.hotels.find(function(x){return x.id===hid2;});
+      if(!h2) return '';
+      itemName = hn(h2);
+      itemSub  = fmtDate(h2.cin||h2.checkin)+' → '+fmtDate(h2.cout||h2.checkout);
+      itemKind = LANG==='zh'?'住宿':'HOTEL';
+      itemIco  = 'stay';
+      itemDone = false;
     } else if(isTp){
       var tid = pid.slice(2);
       var tp = d.transport.find(function(x){return x.id===tid;});
@@ -1503,34 +1877,49 @@ function rSchedule() {
     var depTime = S.doneItems[depKey]||'';
     var nNum    = 'nº'+(i+1<10?'0'+(i+1):(i+1));
 
-    var tStyle = 'font-family:var(--mono);font-size:11px;padding:3px 6px;border:1px solid var(--hair2);background:var(--bg);color:var(--ink);width:90px';
+    var tStyle = 'font-family:var(--mono);font-size:12px;padding:4px 6px;border:1px solid var(--hair2);background:var(--bg);color:var(--ink);width:64px;text-align:center;letter-spacing:1px';
     var timeRow = '<div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;align-items:center">'
       +'<label style="display:flex;align-items:center;gap:5px">'
-      +'<span style="font-family:var(--mono);font-size:8px;letter-spacing:1px;color:var(--muted)">'+(LANG==='zh'?'到达':'ARR')+'</span>'
-      +'<input type="time" value="'+arrTime+'" data-date="'+day.date+'" data-pid="'+pid+'" data-type="arr" onchange="setItemTime(this)" style="'+tStyle+'">'
+      +'<span style="font-family:var(--mono);font-size:8px;letter-spacing:1px;color:var(--muted)">'+(LANG==="zh"?"到达":"ARR")+'</span>'
+      +'<input type="time" value="'+arrTime+'" data-date="'+day.date+'" data-pid="'+pid+'" data-type="arr" onchange="setItemTime(this)" style="'+tStyle+'" step="300">'
       +'</label>'
       +'<label style="display:flex;align-items:center;gap:5px">'
-      +'<span style="font-family:var(--mono);font-size:8px;letter-spacing:1px;color:var(--muted)">'+(LANG==='zh'?'离开':'DEP')+'</span>'
-      +'<input type="time" value="'+depTime+'" data-date="'+day.date+'" data-pid="'+pid+'" data-type="dep" onchange="setItemTime(this)" style="'+tStyle+'">'
+      +'<span style="font-family:var(--mono);font-size:8px;letter-spacing:1px;color:var(--muted)">'+(LANG==="zh"?"离开":"DEP")+'</span>'
+      +'<input type="time" value="'+depTime+'" data-date="'+day.date+'" data-pid="'+pid+'" data-type="dep" onchange="setItemTime(this)" style="'+tStyle+'" step="300">'
       +'</label>'
       +'</div>';
-    var _costKey2='cost_'+day.date+'_'+pid;
-    var _payKey2='payer_'+day.date+'_'+pid;
-    var _itemCost=S.doneItems[_costKey2]||'';
-    var _itemPayer=S.doneItems[_payKey2]||'';
+    // Read cost/payer from expenses[] as single source of truth
+    var _expId='sched_'+day.date+'_'+pid;
+    var _expEntry=d.expenses.find(function(e){return e.id===_expId;});
+    // Also check transport object for pre-existing cost (e.g. flight tickets)
+    var _srcTp = isTp ? d.transport.find(function(t){return t.id===pid.slice(2);}) : null;
+    var _srcR = isRest ? d.restaurants.find(function(r){return r.id===pid.slice(2);}) : null;
+    var _itemCost = _expEntry ? String(_expEntry.amount||'') : (_srcTp&&_srcTp.cost?String(_srcTp.cost):'');
+    var _itemPayer = _expEntry ? (_expEntry.payer||'') : (_srcTp&&_srcTp.payer?_srcTp.payer:'');
     var _payOpts2='<option value="">'+(LANG==='zh'?'谁付':'Paid by')+'</option>'
+      +'<option value="self"'+(  _itemPayer==='self'?' selected':'')+'>'
+      +(LANG==='zh'?'各自':'Self')+'</option>'
       +members.map(function(m){return '<option value="'+m.id+'"'+(_itemPayer===m.id?' selected':'')+'>'+m.name+'</option>';}).join('');
-    var costRow='<div style="display:flex;gap:8px;margin-top:6px;align-items:center">'
+    var _isSpecial = !isRest && !isTp && !isHotel && d.places.find(function(p){return p.id===pid&&p.isSpecial;});
+    var _noteKey2='note_'+day.date+'_'+pid;
+    var _noteVal=S.doneItems[_noteKey2]||'';
+    var _notePh=LANG==='zh'?'填具体名称，如：成都双流机场':'e.g. Chengdu Shuangliu Airport';
+    var noteRow=_isSpecial?'<div style="margin-top:6px"><input type="text" placeholder="'+_notePh+'" value="'+_noteVal+'" style="font-family:var(--mono);font-size:12px;padding:5px 8px;border:1px solid var(--hair2);background:var(--bg);color:var(--ink);width:100%;box-sizing:border-box" onchange="setSpecialNote(this)" data-date="'+day.date+'" data-pid="'+pid+'"></div>':'';
+    var costRow='<div style="display:flex;gap:8px;margin-top:6px;align-items:center;flex-wrap:wrap">'
       +'<span style="font-family:var(--mono);font-size:8px;letter-spacing:1px;color:var(--muted)">'+(LANG==='zh'?'费用':'COST')+'</span>'
       +'<input type="number" placeholder="0" value="'+_itemCost+'" style="font-family:var(--mono);font-size:11px;padding:3px 6px;border:1px solid var(--hair2);background:var(--bg);color:var(--ink);width:80px;text-align:right" onchange="setItemCost(this)" data-date="'+day.date+'" data-pid="'+pid+'">'
       +'<select style="font-family:var(--mono);font-size:11px;padding:3px 4px;border:1px solid var(--hair2);background:var(--bg);color:var(--ink)" onchange="setItemPayer(this)" data-date="'+day.date+'" data-pid="'+pid+'">'+_payOpts2+'</select>'
       +'</div>';
 
-    var kindColors = {sight:'var(--red)',food:'#8B5E14',transit:'var(--muted)'};
+    var kindColors = {sight:'var(--red)',food:'#8B5E14',transit:'var(--muted)',stay:'#2E6DA4'};
     var kindCol = kindColors[itemIco]||'var(--red)';
 
-    return '<div class="tl-item'+(isDone?' done':'')+'">'
+    return '<div class="tl-item'+(isDone?' done':'')+'" draggable="true"'
+      +' data-date="'+day.date+'" data-pid="'+pid+'" data-idx="'+i+'"'
+      +' ondragstart="tlDragStart(event)" ondragover="tlDragOver(event)" ondrop="tlDrop(event)"'
+      +' ondragend="tlDragEnd(event)" style="cursor:grab">'
       +'<div class="tl-left">'
+      +'<div style="font-size:14px;color:var(--muted);text-align:center;margin-bottom:4px;cursor:grab;user-select:none">⠿</div>'
       +'<div class="tl-time">'+(arrTime?'<span style="font-size:10px;color:'+kindCol+';font-weight:600;line-height:1.3">'+arrTime+'</span>':'')+'</div>'
       +'<div class="tl-no" style="color:'+kindCol+'">'+nNum+'</div>'
       +'</div>'
@@ -1543,6 +1932,8 @@ function rSchedule() {
       +(itemSub&&itemSub!==itemName?'<div class="tl-sub">'+itemSub+'</div>':'')
       +(itemDist?'<div class="tl-dist">'+itemDist+'</div>':'')
       +timeRow
+      +noteRow
+      +costRow
       +'</div>'
       +'<button class="del-btn" style="font-size:15px;padding:0 4px;margin-top:14px" onclick="removeFromDay(this.dataset.date,this.dataset.pid,event)" data-date="'+day.date+'" data-pid="'+pid+'">&#xD7;</button>'
       +'</div>';
@@ -1550,37 +1941,48 @@ function rSchedule() {
   });
   // Build connector rows between items
   // ── Connector rows (dropdown + cost) ──
-  var _mOpts=['walk','metro','taxi','bus','rental','other'].map(function(_m){
+  var _mOpts=['walk','metro','taxi','bus','flight','rental','other'].map(function(_m){
     var _lbl={walk:LANG==='zh'?'🚶 步行':'🚶 Walk',
               metro:LANG==='zh'?'🚇 地铁':'🚇 Metro',
               taxi:LANG==='zh'?'🚕 滴滴/出租':'🚕 DiDi/Taxi',
               bus:LANG==='zh'?'🚌 巴士':'🚌 Bus',
+              flight:LANG==='zh'?'✈️ 飞机':'✈️ Flight',
               rental:LANG==='zh'?'🚗 租车':'🚗 Car rental',
+              flight:LANG==='zh'?'✈️ 飞机':'✈️ Flight',
               other:LANG==='zh'?'🚐 其他':'🚐 Other'};
     return '<option value="'+_m+'">'+(_lbl[_m]||_m)+'</option>';
   }).join('');
+  function _mkConn(fromPid,toPid){
+    var _selStyle='font-family:var(--mono);font-size:11px;padding:4px 6px;border:1px solid var(--hair2);background:var(--bg);color:var(--muted);cursor:pointer;max-width:140px';
+    var _inpStyle='font-family:var(--mono);font-size:11px;padding:4px 6px;border:1px solid var(--hair2);background:var(--bg);color:var(--ink);width:80px;text-align:right';
+    var _sk='seg_'+day.date+'_'+fromPid+'_'+toPid;
+    var _ek='segtp_'+day.date+'_'+fromPid+'_'+toPid;
+    var _se=d.expenses.find(function(e){return e.id===_ek;});
+    var _cur=S.doneItems[_sk]||'';
+    var _cost=_se?String(_se.amount||''):(S.doneItems['segcost_'+day.date+'_'+fromPid+'_'+toPid]||'');
+    var _sp=_se?(_se.payer||''):(S.doneItems['segpay_'+day.date+'_'+fromPid+'_'+toPid]||'');
+    var _spo=members.map(function(m){return '<option value="'+m.id+'"'+(_sp===m.id?' selected':'')+'>'+m.name+'</option>';}).join('');
+    var _ps='<select style="font-family:var(--mono);font-size:11px;padding:4px;border:1px solid var(--hair2);background:var(--bg);color:var(--ink)" onchange="setSegmentPayer(this)" data-date="'+day.date+'" data-from="'+fromPid+'" data-to="'+toPid+'">'
+      +'<option value="">'+(LANG==="zh"?"谁付":"Paid")+'</option>'
+      +'<option value="self"'+(_sp==="self"?' selected':'')+'>'
+      +(LANG==="zh"?"各自":"Self")+'</option>'+_spo+'</select>';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0 6px 52px;border-bottom:1px dashed var(--hair);flex-wrap:wrap">'
+      +'<select style="'+_selStyle+'" onchange="setSegmentMode(this)" data-date="'+day.date+'" data-from="'+fromPid+'" data-to="'+toPid+'">'
+      +'<option value="">'+(LANG==="zh"?"车程...":"Transit...")+'</option>'
+      +_mOpts.replace('value="'+_cur+'"','value="'+_cur+'" selected')
+      +'</select>'
+      +'<input type="number" placeholder="'+getCurrency()+'" value="'+_cost+'" style="'+_inpStyle+'" onchange="setSegmentCost(this)" data-date="'+day.date+'" data-from="'+fromPid+'" data-to="'+toPid+'">'
+      +_ps
+      +'</div>';
+  }
   var _parts=[];
+  if(day.placeIds.length>0) _parts.push(_mkConn('start',day.placeIds[0]));
   tlItemsArr.forEach(function(itm,ci){
     _parts.push(itm);
-    if(ci<day.placeIds.length-1){
-      var _f=day.placeIds[ci],_t=day.placeIds[ci+1];
-      var _cur=getSegmentMode(day.date,_f,_t);
-      var _costKey='segcost_'+day.date+'_'+_f+'_'+_t;
-      var _cost=S.doneItems[_costKey]||'';
-      var _selStyle='font-family:var(--mono);font-size:11px;padding:4px 6px;border:1px solid var(--hair2);background:var(--bg);color:'+(_cur?'var(--red)':'var(--muted)')+';cursor:pointer;max-width:140px';
-      var _inpStyle='font-family:var(--mono);font-size:11px;padding:4px 6px;border:1px solid var(--hair2);background:var(--bg);color:var(--ink);width:80px;text-align:right';
-      _parts.push(
-        '<div style="display:flex;align-items:center;gap:8px;padding:6px 0 6px 52px;border-bottom:1px dashed var(--hair)">'
-        +'<select style="'+_selStyle+'" onchange="setSegmentMode(this)" data-date="'+day.date+'" data-from="'+_f+'" data-to="'+_t+'">'
-        +'<option value="">'+(LANG==='zh'?'车程...':'转乘...')+'</option>'
-        +_mOpts.replace('value="'+_cur+'"','value="'+_cur+'" selected')
-        +'</select>'
-        +'<input type="number" placeholder="'+getCurrency()+'" value="'+_cost+'" style="'+_inpStyle+'" onchange="setSegmentCost(this)" data-date="'+day.date+'" data-from="'+_f+'" data-to="'+_t+'">'
-        +'</div>'
-      );
-    }
+    if(ci<day.placeIds.length-1) _parts.push(_mkConn(day.placeIds[ci],day.placeIds[ci+1]));
   });
   var tlItems=_parts.join('');
+
 
 
   var chapterDate = new Date(day.date+'T12:00:00');
@@ -1609,52 +2011,92 @@ function rSchedule() {
 }
 
 function setSchedDay(i) { S.schedDay=i; render(); }
+function setSpecialNote(el){var date=el.dataset.date,pid=el.dataset.pid;S.doneItems['note_'+date+'_'+pid]=el.value;save();}
 function setItemCost(el) {
   var date=el.dataset.date, pid=el.dataset.pid;
-  var costKey='cost_'+date+'_'+pid;
-  S.doneItems[costKey]=el.value;
-  // Sync to expenses
+  S.doneItems['cost_'+date+'_'+pid]=el.value;
+  // If transport item, sync back to transport object
+  if(pid.indexOf('t_')===0){
+    var tp=D().transport.find(function(t){return t.id===pid.slice(2);});
+    if(tp) tp.cost=parseFloat(el.value)||0;
+  }
+  syncItemToExpenses(date, pid);
+  save();
+}
+function syncItemToExpenses(date, pid) {
   var expId='sched_'+date+'_'+pid;
   var d=D();
+  var costVal=parseFloat(S.doneItems['cost_'+date+'_'+pid])||0;
+  var payer=S.doneItems['payer_'+date+'_'+pid]||''; // '' = unassigned, 'self' = split
   var existing=d.expenses.find(function(e){return e.id===expId;});
-  if(el.value&&parseFloat(el.value)>0){
-    var payKey='payer_'+date+'_'+pid;
-    var payer=S.doneItems[payKey]||(members[0]?members[0].id:'');
-    if(existing){existing.amount=parseFloat(el.value);existing.payer=payer;}
-    else{
-      // Determine item name
-      var pid2=pid;
-      var isR=pid2.indexOf('r_')===0,isT=pid2.indexOf('t_')===0;
-      var name=isR?(d.restaurants.find(function(r){return 'r_'+r.id===pid2;})||{}).cn||pid2
-               :isT?(d.transport.find(function(t){return 't_'+t.id===pid2;})||{}).cn||pid2
-               :(d.places.find(function(p){return p.id===pid2;})||{}).cn||pid2;
-      d.expenses.push({id:expId,cat:'t',cn:name,en:name,amount:parseFloat(el.value),payer:payer,split:'all'});
-    }
-  } else if(existing){
-    d.expenses=d.expenses.filter(function(e){return e.id!==expId;});
+  if(costVal>0) { // Always add to expenses (unassigned shows red, self shows as 各自)
+    var isR=pid.indexOf('r_')===0, isT=pid.indexOf('t_')===0;
+    var item=isR?d.restaurants.find(function(r){return 'r_'+r.id===pid;})
+              :isT?d.transport.find(function(t){return 't_'+t.id===pid;})
+              :d.places.find(function(p){return p.id===pid;});
+    var name=item?(item.cn||item.name||pid):pid;
+    var cat=isR?'m':isT?'x':'t';
+    // payer '' = unassigned (show red in budget), not defaulted to first member
+    if(existing){existing.amount=costVal;existing.payer=payer;existing.cn=name;existing.en=name;existing.cat=cat;}
+    else{d.expenses.push({id:expId,cat:cat,cn:name,en:name,amount:costVal,payer:payer,split:'all',date:date});}
+  } else if(payer==='self'){
+    var isR2=pid.indexOf('r_')===0,isT2=pid.indexOf('t_')===0;
+    var item2=isR2?d.restaurants.find(function(r){return 'r_'+r.id===pid;})
+              :isT2?d.transport.find(function(t){return 't_'+t.id===pid;})
+              :d.places.find(function(p){return p.id===pid;});
+    var name2=item2?(item2.cn||item2.name||pid):pid;
+    var cat2=isR2?'m':isT2?'x':'t';
+    if(existing){existing.amount=costVal;existing.payer='self';}
+    else if(costVal>0){d.expenses.push({id:expId,cat:cat2,cn:name2,en:name2,amount:costVal,payer:'self',split:'all',date:date});}
   }
-  save();
+  // If costVal=0, keep existing record but update payer
+  if(costVal===0 && existing) d.expenses=d.expenses.filter(function(e){return e.id!==expId;});
 }
 function setItemPayer(el) {
   var date=el.dataset.date, pid=el.dataset.pid;
   S.doneItems['payer_'+date+'_'+pid]=el.value;
-  var expId='sched_'+date+'_'+pid;
-  var existing=D().expenses.find(function(e){return e.id===expId;});
-  if(existing) existing.payer=el.value;
+  // If transport item, sync payer to transport object too
+  if(pid.indexOf('t_')===0){
+    var tp=D().transport.find(function(t){return t.id===pid.slice(2);});
+    if(tp) tp.payer=el.value;
+  }
+  syncItemToExpenses(date, pid);
   save();
 }
 function setItemTime(el) {
   var date = el.dataset.date;
   var pid  = el.dataset.pid;
   var type = el.dataset.type;
-  S.doneItems[type+'_'+date+'_'+pid] = el.value;
+  var val  = el.value.trim();
+  // Validate HH:MM format
+  el.style.borderColor='';el.title='';
+  // Validate: dep must not be earlier than arr
+  if(type==='dep' && val) {
+    var arrKey = 'arr_'+date+'_'+pid;
+    var arr = S.doneItems[arrKey]||'';
+    if(arr && val < arr) {
+      el.style.borderColor = 'var(--err)';
+      el.title = LANG==='zh'?'离开时间不能早于到达时间':'Departure cannot be before arrival';
+      return; // reject
+    }
+  }
+  if(type==='arr' && val) {
+    var depKey = 'dep_'+date+'_'+pid;
+    var dep = S.doneItems[depKey]||'';
+    if(dep && val > dep) {
+      // arrival is after departure - clear departure
+      S.doneItems[depKey] = '';
+    }
+  }
+  el.style.borderColor = '';
+  el.title = '';
+  S.doneItems[type+'_'+date+'_'+pid] = val;
   save();
-  // Update just the time display in left column - find sibling
   var item = el.closest('.tl-item');
   if(item && type==='arr') {
     var timeEl = item.querySelector('.tl-time');
-    if(timeEl) timeEl.innerHTML = el.value 
-      ? '<span style="font-size:10px;font-weight:600;line-height:1.3">'+el.value+'</span>' 
+    if(timeEl) timeEl.innerHTML = val
+      ? '<span style="font-size:10px;font-weight:600;line-height:1.3">'+val+'</span>'
       : '';
   }
 }
@@ -1664,41 +2106,43 @@ function rStay() {
   var d = D();
   var overlap = hotelsOverlap(d.hotels);
   var items = d.hotels.map(function(h){
-    var ni = nightsBetween(h.checkin,h.checkout);
-    return '<div class="hotel-item">'
-      +'<div class="hotel-icon">🏨</div>'
-      +'<div style="flex:1">'
-      +'<div class="hotel-name-main">'+hn(h)+'</div>'
-      +(h.cn!==h.en?'<div class="hotel-name-sub">'+(LANG==='zh'?h.en:h.cn)+'</div>':'')
-      +'<div class="hotel-dates-txt">'+L('checkin')+' '+fmtDate(h.checkin)+'  →  '+L('checkout')+' '+fmtDate(h.checkout)+(ni>0?' · '+ni+'n':'')+'</div>'
+    return '<div class="stay-item" style="flex-wrap:wrap;padding:14px 16px;margin:0 12px 8px;background:var(--card);border-radius:2px">'
+      +'<div class="stay-icon">🏨</div>'
+      +'<div style="flex:1;min-width:0">'
+      +'<div class="stay-name">'+hn(h)+'</div>'
+      +'<div class="stay-dates" style="color:var(--red)">'
+      +(LANG==='zh'?'入住 ':'In ')+fmtDate(h.cin||h.checkin)
+      +' → '+(LANG==='zh'?'退房 ':'Out ')+fmtDate(h.cout||h.checkout)
+      +' · '+(nightsBetween(h.cin||h.checkin||'', h.cout||h.checkout||''))+'n'
       +'</div>'
-      +'<button class="del-btn" onclick="delHotel(\''+h.id+'\',event)">&#xD7;</button>'
+      +'<div style="display:flex;gap:6px;margin-top:6px">'
+      +'<input type="date" value="'+(h.cin||h.checkin||'')+'" onchange="updHotel(this)" data-hid="'+h.id+'" data-field="cin" style="font-family:var(--mono);font-size:11px;padding:3px 5px;border:1px solid var(--hair2);background:var(--bg);color:var(--ink)">'
+      +'<input type="date" value="'+(h.cout||h.checkout||'')+'" onchange="updHotel(this)" data-hid="'+h.id+'" data-field="cout" style="font-family:var(--mono);font-size:11px;padding:3px 5px;border:1px solid var(--hair2);background:var(--bg);color:var(--ink)">'
+      +'</div></div>'
+      +'<button class="del-btn" onclick="delHotel(this.dataset.hid)" data-hid="'+h.id+'">&times;</button>'
       +'</div>';
-  }).join('')||'<div style="padding:28px 22px;font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted)">'+(LANG==='zh'?'未添加酒店':'NO HOTELS ADDED')+'</div>';
+  }).join('')||'<div style="padding:28px 22px;font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted)">'+(LANG==='zh'?'未添加住宿':'NO HOTELS ADDED')+'</div>';
+
+  var overlapWarn = overlap ? '<div style="background:rgba(181,70,42,0.08);border-left:3px solid var(--red);padding:10px 16px;font-family:var(--mono);font-size:10px;color:var(--red);margin:0 22px 16px">'+(LANG==='zh'?'日期重叠！请检查住宿':'DATE OVERLAP! Please check hotels')+'</div>' : '';
 
   return '<div class="page-header"><div class="page-title-jp">'+(LANG==='zh'?'住宿':'Stay')+'</div></div>'
-    +(overlap?'<div class="warn-band" style="margin:12px 22px">⚠ '+L('hotelOverlapWarn')+'</div>':'')
-    +items
-    +'<div class="info-band" style="margin:12px 22px 0">'+L('hotelInfo')+'</div>'
-    +'<div class="hotel-add-form">'
-    +'<div class="section-label" style="margin-bottom:14px">'+(LANG==='zh'?'添加酒店':'ADD HOTEL')+'</div>'
-    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'酒店名称':'Hotel name')+' <span class="req">*</span></div><input class="f-inp" id="hcn" placeholder="'+ph('丽橙酒店','Licheng Hotel')+'"></div>'
-    +'<div class="f-group"><div class="f-label">English name</div><input class="f-inp" id="hen" placeholder="'+ph('丽橙酒店','Licheng Hotel')+'"></div>'
-    +'<div class="f-group"><div class="f-label">'+L('checkin')+'</div><input class="f-inp" type="date" id="hci"></div>'
-    +'<div class="f-group"><div class="f-label">'+L('checkout')+'</div><input class="f-inp" type="date" id="hco"></div>'
+    +overlapWarn+items
+    +'<div class="tp-add-form">'
+    +'<div class="section-label" style="margin-bottom:14px">'+(LANG==='zh'?'添加住宿':'ADD HOTEL')+'</div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'酒店名称':'Hotel Name')+' <span class="req">*</span></div><input class="f-inp" id="hcn" placeholder="'+ph('丽橙酒店','Licheng Hotel')+'"></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'英文名':'English name')+'</div><input class="f-inp" id="hen" placeholder="'+ph('丽橙酒店','Licheng Hotel')+'"></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'入住日期 (彝日)':'Check-in date')+'</div><input class="f-inp" type="date" id="hcin"></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'退房日期 (彝日)':'Check-out date')+'</div><input class="f-inp" type="date" id="hcout"></div>'
     +'<button class="btn-red" onclick="addHotel()">＋ '+(LANG==='zh'?'添加':'Add')+'</button>'
     +'</div>';
 }
 
-// ── TRANSPORT ──
 function rTransport() {
   var d = D();
-  var typeOpts = [
-    {v:'flight',l:L('ttype_flight')},{v:'train',l:L('ttype_train')},
-    {v:'bus',l:L('ttype_bus')},{v:'ferry',l:L('ttype_ferry')},
-    {v:'rental',l:L('ttype_rental')},{v:'rideshare',l:L('ttype_rideshare')},
-    {v:'other',l:L('ttype_other')}
-  ].map(function(o){return'<option value="'+o.v+'">'+o.l+'</option>';}).join('');
+  var typeOpts = ['flight','train','bus','ferry','rental','rideshare','other'].map(function(t){
+    var lbl={flight:LANG==='zh'?'✈️ 机票':'✈️ Flight',train:LANG==='zh'?'🚄 火车':'🚄 Train',bus:LANG==='zh'?'🚌 巴士':'🚌 Bus',ferry:LANG==='zh'?'⛴️ 轮船':'⛴️ Ferry',rental:LANG==='zh'?'🚗 租车':'🚗 Rental',rideshare:LANG==='zh'?'🚕 滴滴':'🚕 DiDi',other:LANG==='zh'?'🚐 其他':'🚐 Other'};
+    return '<option value="'+t+'">'+lbl[t]+'</option>';
+  }).join('');
 
   var items = d.transport.map(function(tp){
     var po=members.map(function(m){
@@ -1706,14 +2150,14 @@ function rTransport() {
     }).join('');
     var costInput='<input type="number" value="'+(tp.cost>0?tp.cost:'')+'" style="width:70px;font-family:var(--mono);font-size:11px;padding:3px 5px;border:1px solid var(--hair2);background:var(--bg);color:var(--ink);text-align:right" onchange="updTpCost(this)" data-id="'+tp.id+'">';
     var payerSel='<select style="font-family:var(--mono);font-size:10px;padding:3px;border:1px solid var(--hair2);background:var(--bg);color:var(--ink)" onchange="updTpPayer(this)" data-id="'+tp.id+'">'
-      +'<option value="">'+(LANG==='zh'?'谁付':'Paid')+'</option>'+po+'</select>';
+      +'<option value="">'+(LANG==='zh'?'谁付':'Paid')+'</option>'+'<option value="self"'+(tp.payer==='self'?' selected':'')+'>'      +(LANG==='zh'?'各自':'Self')+'</option>'+po+'</select>';
     return '<div class="tp-item" style="flex-wrap:wrap;row-gap:6px">'
       +'<div class="tp-icon-box">'+(TICONS[tp.type]||'🚐')+'</div>'
       +'<div style="flex:1;min-width:0"><div class="tp-name">'+tn(tp)+'</div>'
       +(tp.detail?'<div class="tp-sub">'+tp.detail+'</div>':'')
       +(tp.date?'<div class="tp-sub">'+fmtDate(tp.date)+'</div>':'')+'</div>'
       +'<div style="display:flex;align-items:center;gap:5px;flex-shrink:0">'+costInput+payerSel+'</div>'
-      +'<button class="del-btn" onclick="delTransport(this.dataset.id,event)" data-id="'+tp.id+'">&#xD7;</button>'
+      +'<button class="del-btn" onclick="delTransport(this.dataset.id,event)" data-id="'+tp.id+'">×</button>'
       +'</div>';
   }).join('')||'<div style="padding:28px 22px;font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted)">'+(LANG==='zh'?'未添加交通':'NO TRANSPORT ADDED')+'</div>';
 
@@ -1722,13 +2166,14 @@ function rTransport() {
     +'<div class="tp-add-form">'
     +'<div class="section-label" style="margin-bottom:14px">'+(LANG==='zh'?'添加交通':'ADD TRANSPORT')+'</div>'
     +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'类型':'Type')+'</div><select class="f-sel" id="ttype" onchange="tpTypeChanged()">'+typeOpts+'</select></div>'
-    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'名称':'Name')+' <span class="req">*</span></div><input class="f-inp" id="tcn" placeholder="'+L('transportNamePH')+'"></div>'
-    +'<div class="f-group"><div class="f-label">'+L('transportDetail')+'</div><input class="f-inp" id="tdetail" placeholder="'+L('transportDetailPH')+'"></div>'
-    +'<div class="f-group" id="tdate_row"><div class="f-label">'+L('transportDate')+'</div><input class="f-inp" type="date" id="tdate"></div>'
-    +'<div class="f-group"><div class="f-label">'+L('transportCost')+' ('+getCurrency()+')</div><input class="f-inp" type="number" id="tcost" placeholder="0"></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'名称':'Name')+' <span class="req">*</span></div><input class="f-inp" id="tcn" placeholder="'+ph('去程机票','Outbound Flight')+'"></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'详情':'Detail')+'</div><input class="f-inp" id="tdetail" placeholder="'+ph('HKG→CTU','HKG→CTU · CX123')+'"></div>'
+    +'<div class="f-group" id="tdate_row"><div class="f-label">'+(LANG==='zh'?'日期':'Date')+'</div><input class="f-inp" type="date" id="tdate"></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'费用':'Cost')+' ('+getCurrency()+')</div><input class="f-inp" type="number" id="tcost" placeholder="0"></div>'
     +'<button class="btn-red" onclick="addTransport()">＋ '+(LANG==='zh'?'添加':'Add')+'</button>'
     +'</div>';
 }
+
 
 // ── FOOD ──
 function rFood() {
@@ -1860,24 +2305,28 @@ function rBudget() {
     var po = members.map(function(m){return'<option value="'+m.id+'"'+(m.id===e.payer?' selected':'')+'>'+m.name+'</option>';}).join('');
     var so = '<option value="all"'+(e.split==='all'?' selected':'')+'>'+(LANG==='zh'?'平摊':'All')+'</option>'
       +members.map(function(m){return'<option value="'+m.id+'"'+(e.split===m.id?' selected':'')+'>'+m.name+'</option>';}).join('');
-    var ico_map = {f:'✈️',h:'🏨',m:'🍜',t:'🎟️',x:'🚇'};
-    return '<div class="exp-item">'
-      +'<div class="exp-date">'+(ico_map[e.cat]||'•')+'</div>'
+        var cat_lbl={f:LANG==='zh'?'机票':'Flight',h:LANG==='zh'?'住宿':'Hotel',m:LANG==='zh'?'餐饮':'Food',t:LANG==='zh'?'門票':'Ticket',x:LANG==='zh'?'交通':'Transit'};
+    var cat_ico={f:'✈️',h:'🏨',m:'🍜',t:'🎫',x:'🚇'};
+    var isUnpaid = !e.payer || e.payer==='';
+    var isSelf = e.payer==='self';
+    var po2='<option value="">'+(LANG==='zh'?'-- 未分配 --':'-- Unassigned --')+'</option>'
+      +'<option value="self"'+(e.payer==='self'?' selected':'')+'>'
+      +(LANG==='zh'?'各自':'Self')+'</option>'+po;
+    return '<div class="exp-item"'+(isUnpaid?' style="border-left:3px solid var(--err);padding-left:11px"':'')+'>'
+      +'<div class="exp-date">'+(cat_ico[e.cat]||'•')+'</div>'
       +'<div style="flex:1">'
-      +'<div class="exp-name">'+(LANG==='zh'?e.cn:e.en)+'</div>'
+      +'<div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap">'
+      +'<span class="exp-name">'+(LANG==='zh'?e.cn:e.en)+'</span>'
+      +'<span style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase">'+(cat_lbl[e.cat]||e.cat)+'</span>'
+      +(e.date?'<span style="font-family:var(--mono);font-size:9px;color:var(--muted)">· '+fmtDate(e.date)+'</span>':'')
+      +(isUnpaid?'<span style="font-family:var(--mono);font-size:9px;color:var(--err);letter-spacing:1px">'+(LANG==='zh'?'未分配':'UNASSIGNED')+'</span>':isSelf?'<span style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px">'+(LANG==='zh'?'各自':'SELF')+'</span>':'')
+      +'</div>'
       +'<div class="exp-controls">'
-      +'<input class="exp-amt-inp" type="number" value="'+e.amount+'" onchange="chgAmt('+e.id+',this.value)" placeholder="0">'
-      +'<select class="exp-sel" onchange="chgPayer('+e.id+',this.value)">'+po+'</select>'
-      +'<select class="exp-sel" onchange="chgSplit('+e.id+',this.value)">'+so+'</select>'
-      +'<select class="exp-sel" id="ec_'+e.id+'">'
-      +'<option value="m"'+(e.cat==='m'?' selected':'')+'>🍜</option>'
-      +'<option value="f"'+(e.cat==='f'?' selected':'')+'>✈️</option>'
-      +'<option value="h"'+(e.cat==='h'?' selected':'')+'>🏨</option>'
-      +'<option value="t"'+(e.cat==='t'?' selected':'')+'>🎟️</option>'
-      +'<option value="x"'+(e.cat==='x'?' selected':'')+'>🚇</option>'
-      +'</select>'
+      +'<input class="exp-amt-inp" type="number" value="'+e.amount+'" onchange="chgAmt(this)" data-eid="'+e.id+'" placeholder="0">'
+      +'<select class="exp-sel" onchange="chgPayer(this)" data-eid="'+e.id+'">'+po2+'</select>'
+      +'<select class="exp-sel" onchange="chgSplit(this)" data-eid="'+e.id+'">'+so+'</select>'
       +'</div></div>'
-      +'<button class="del-btn" onclick="delExp('+e.id+')">&#xD7;</button>'
+      +'<button class="del-btn" onclick="delExp(this)" data-eid="'+e.id+'">&#xD7;</button>'
       +'</div>';
   }).join('');
 
@@ -1889,7 +2338,7 @@ function rBudget() {
     var paid = exps.filter(function(e){return e.payer===m.id;}).reduce(function(s,e){return s+e.amount;},0);
     var b = bal[m.id]||0;
     var bStr = b>0.5?(LANG==='zh'?'收回 ':'Gets ')+curSym+Math.round(b)
-      :b<-0.5?(LANG==='zh'?'应付 ':'Owes ')+curSym+Math.round(-b)
+      :b<-0.5?(LANG==='zh'?'应付 ':'Owes ')+curSym+(Math.round(-b*100)/100).toFixed(2)
       :(LANG==='zh'?'✓ 已平':'✓ OK');
     var bCol = b>0.5?'var(--red)':b<-0.5?'#8C5A00':'var(--muted)';
     return '<div class="paid-row">'
@@ -1907,7 +2356,7 @@ function rBudget() {
       +txns.map(function(tx){
         return '<div class="settle-row" style="margin-bottom:12px">'
           +'<div class="settle-from">'+tx.from.name+' → '+tx.to.name+'</div>'
-          +'<div class="settle-amt-big">'+curSym+Math.round(tx.amt).toLocaleString()+'</div>'
+          +'<div class="settle-amt-big">'+curSym+tx.amt.toFixed(2)+'</div>'
           +'</div>';
       }).join('')
       +'<div class="settle-bar">'
@@ -1931,6 +2380,7 @@ function rBudget() {
 
   return '<div class="page-header">'
     +'<div class="page-title-jp">'+(LANG==='zh'?'账单':'Budget')+'</div>'
+    +'<button style="font-family:var(--mono);font-size:8px;letter-spacing:1px;padding:4px 9px;border:1px solid var(--hair2);background:transparent;color:var(--muted);cursor:pointer" onclick="cleanOrphanedExpenses()">'+(LANG==="zh"?"清理旧数据":"Clean")+'</button>'
     +'<div class="cur-sel-wrap" style="display:flex;align-items:center;gap:8px">'
     +'<span style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--muted)">'+(LANG==='zh'?'币种':'CUR')+'</span>'
     +'<select class="cur-sel" style="font-size:12px;padding:4px 6px;border:1px solid var(--hair2);background:var(--card);color:var(--ink);font-family:var(--mono)" onchange="setCurrency(this.value)">'+curOpts+'</select>'
@@ -1939,7 +2389,7 @@ function rBudget() {
     +'<div class="budget-total">'
     +'<div class="total-mono">TOTAL · '+(LANG==='zh'?'合计':'TRIP')+'</div>'
     +'<div class="total-amount"><span class="total-sym">'+curSym+'</span><div class="total-num">'+Math.round(total).toLocaleString()+'</div></div>'
-    +'<div class="total-per">'+(LANG==='zh'?'per person · ':'per person · ')+curSym+Math.round(half).toLocaleString()+'</div>'
+    +'<div class="total-per">'+(LANG==='zh'?'per person · ':'per person · ')+curSym+half.toFixed(2)+'</div>'
     +'</div>'
     +'<div class="red-rule" style="margin:0 22px 18px"></div>'
     // members + settle
@@ -1975,7 +2425,7 @@ function renderPickerList() {
   var cats = [
     {k:'places',   zh:'景点',  en:'Sights'},
     {k:'food',     zh:'餐饮',  en:'Food'},
-    {k:'transport',zh:'交通',  en:'Transport'},
+    {k:'stay',     zh:'住宿',  en:'Stay'},
   ];
   var catBar = '<div style="display:flex;border-bottom:1px solid var(--hair)">'
     +cats.map(function(c){
@@ -2003,14 +2453,24 @@ function renderPickerList() {
         +'<div style="flex:1"><div class="pi-name">'+name+'</div>'+(r.loc?'<div class="pi-sub">'+r.loc+'</div>':'')+'</div>'
         +'<div class="pi-dist">🍜</div></div>';
     }).join('') || '<div style="padding:20px 22px;font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:2px">'+(LANG==='zh'?'先在更多>餐饮添加':'Add in More > Food')+'</div>';
-  } else if(cat==='transport') {
-    items = d.transport.map(function(tp){
-      var sel=S.pickerSel.indexOf('t_'+tp.id)>=0;
-      return '<div class="picker-item'+(sel?' sel':'')+'" onclick="tglPicker(this.dataset.pid)" data-pid="t_'+tp.id+'">'
+    // Quick add new restaurant
+    items += '<div style="padding:12px 22px;border-top:1px solid var(--hair);background:var(--bg)">'
+      +'<div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--red);margin-bottom:8px;text-transform:uppercase">'+(LANG==='zh'?'新增餐厅':'New restaurant')+'</div>'
+      +'<div style="display:flex;gap:8px">'
+      +'<input id="pickerFoodName" style="flex:1;font-family:var(--sans);font-size:14px;padding:8px 10px;border:1px solid var(--hair2);background:var(--card);color:var(--ink)" placeholder="'+(LANG==="zh"?"餐厅名称":"Restaurant name")+'">'
+      +'<button style="padding:8px 14px;background:var(--red);color:white;border:none;font-family:var(--mono);font-size:12px;cursor:pointer;flex-shrink:0" onclick="pickerAddFood()">+</button>'
+      +'</div></div>';
+  } else if(cat==='stay') {
+    items=d.hotels.map(function(h){
+      var hpid='h_'+h.id;
+      var sel=S.pickerSel.indexOf(hpid)>=0;
+      var cin=h.cin||h.checkin||'',cout=h.cout||h.checkout||'';
+      return '<div class="picker-item'+(sel?' sel':'')+'" onclick="tglPicker(this.dataset.pid)" data-pid="'+hpid+'">'
         +'<div class="pi-circ"><span class="pi-tick">&#x2713;</span></div>'
-        +'<div style="flex:1"><div class="pi-name">'+(LANG==='zh'?tp.cn:tp.en)+'</div>'+(tp.detail?'<div class="pi-sub">'+tp.detail+'</div>':'')+'</div>'
-        +'<div class="pi-dist">'+(TICONS[tp.type]||'🚐')+'</div></div>';
-    }).join('') || '<div style="padding:20px 22px;font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:2px">'+(LANG==='zh'?'先在更多>交通添加':'Add in More > Transport')+'</div>';
+        +'<div style="flex:1"><div class="pi-name">'+hn(h)+'</div>'
+        +(cin?'<div class="pi-sub">'+fmtDate(cin)+' → '+fmtDate(cout)+'</div>':'')
+        +'</div><div class="pi-dist">🏨</div></div>';
+    }).join('')||'<div style="padding:20px 22px;font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:2px">'+(LANG==='zh'?'先在准备>住宿添加':'Add in Prepare > Stay')+'</div>'
   }
   document.getElementById('pickerList').innerHTML = catBar + items;
 }
@@ -2035,6 +2495,22 @@ function updateSyncIndicator(status) {
 }
 
 // ============ INIT ============
+// Ensure default transport items exist
+try{
+  var _d=D();
+  if(!_d.places.find(function(p){return p.id==='place_airport';})&&!_d.places.find(function(p){return p.id==='place_station';})){
+    _d.places.unshift({id:'place_station',cn:'火车站',en:'Train Station',type:'transit',area:'',kh:0,min:0,done:false,isSpecial:true});
+    _d.places.unshift({id:'place_airport',cn:'机场',en:'Airport',type:'transit',area:'',kh:0,min:0,done:false,isSpecial:true});
+    save();
+  }
+  if(!_d.transport.find(function(t){return t.id==='tp_airport';})){
+    _d.transport.unshift({id:'tp_station',type:'train',cn:'火车站接送',en:'Train Station',detail:'',date:'',cost:0});
+    _d.transport.unshift({id:'tp_airport',type:'flight',cn:'机场接送',en:'Airport Transfer',detail:'',date:'',cost:0});
+    save();
+  }
+}catch(e){}
+// Update login footer version
+try{var _vEl=document.getElementById('appVersion');if(_vEl)_vEl.textContent=APP_VERSION+' · 京都和纸';}catch(e){}
 try{var _lang=localStorage.getItem('wp4_lang');if(_lang)LANG=_lang;}catch(e){}
 document.getElementById('langBtn').textContent=LANG==='zh'?'EN':'中文';
 // schedDay initialized in S above
@@ -2045,6 +2521,50 @@ try{
     doLogin();
   }
 }catch(e){}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function updHotel(el){
+  var h=D().hotels.find(function(h){return h.id===el.dataset.hid;});
+  if(!h)return;
+  var f=el.dataset.field,val=el.value;
+  var cin=h.cin||h.checkin||'',cout=h.cout||h.checkout||'';
+  if(f==='cout'&&val&&cin&&val<=cin){el.style.borderColor='var(--err)';return;}
+  el.style.borderColor='';
+  if(f==='cin'){h.cin=val;delete h.checkin;}
+  if(f==='cout'){h.cout=val;delete h.checkout;}
+  save();render();
+}
+
+
+
 
 
 
