@@ -431,76 +431,112 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15p
 </head>
 <body>
 <div class="grain"></div>
-<div class="shell" id="shell">
-
-  <!-- LOGIN -->
-  <div class="login-screen" id="loginScreen">
-    <div class="login-hanko">旅</div>
-    <div class="login-wordmark">WanderPlan</div>
-    <div class="login-sig">CheungKinFai Idea</div>
-    <div class="login-tagline">Travel Planning · 旅游规划</div>
-    <div class="login-card">
-      <div class="login-field-label">邀请码 · Invite Code</div>
-      <input class="login-inp" id="inviteInput" maxlength="12"
-        placeholder="e.g. ALEX2026"
-        onkeydown="if(event.key==='Enter')doLogin()"
-        oninput="this.value=this.value.toUpperCase();document.getElementById('loginErrMsg').textContent=''">
-      <button class="login-btn" id="loginBtn2" onclick="(function(){try{doLogin();}catch(e){document.getElementById('loginErrMsg').textContent='Error: '+e.message;}})()">入场 · Enter</button>
-      <div class="login-err" id="loginErrMsg"></div>
-      <button class="login-demo-btn" onclick="(function(){try{document.getElementById('inviteInput').value='DEMO';doLogin();}catch(e){document.getElementById('loginErrMsg').textContent='Error: '+e.message;}})()">体验 Demo · Try Demo</button>
-      <button class="login-demo-btn" style="margin-top:6px;font-size:8px;opacity:0.3" onclick="(function(){try{clearStorage();}catch(e){location.reload();}})()">清除缓存 · Clear cache</button>
-    </div>
-    <div class="login-footer" id="appVersion">v2.6 · 京都和纸</div>
-  </div>
-
-  <!-- STATUS BAR -->
+<div class="shell" id="appShell">
   <div class="sb"></div>
-
-  <!-- TOP CHROME -->
-  <div class="chrome">
+  <header class="chrome">
     <div class="logo-wrap">
       <div class="hanko">旅</div>
       <div>
         <div class="logo-name">WanderPlan</div>
-        <div class="logo-sub">EST. 二〇二六</div>
+        <div class="logo-sub">CHEUNGKINFAI IDEA</div>
       </div>
     </div>
     <div class="chrome-right">
-      <div class="sync-pip offline" id="syncPip" style="display:none"></div>
-      <div class="user-pill" id="userBadge" onclick="logout()" style="display:none">
-        <div class="user-pip" id="userPip">?</div>
-        <span class="user-nm" id="userNm">--</span>
-      </div>
       <button class="lang-pill" id="langBtn" onclick="toggleLang()">EN</button>
+      <button id="clearCacheBtn" onclick="clearLocalCache()" style="display:none;font-family:var(--mono);font-size:9px;letter-spacing:1px;padding:4px 8px;border:1px solid rgba(181,70,42,0.5);color:var(--red);background:transparent;border-radius:6px;cursor:pointer;opacity:0.7">CLEAR</button>
+      <div class="user-pill" id="userBadge" style="display:none" onclick="logout()">
+        <div class="user-pip" id="userPip">D</div>
+        <div class="user-nm" id="userNm">Demo</div>
+        <div class="sync-pip offline" id="syncPip"></div>
+      </div>
     </div>
-  </div>
-
-  <!-- DEST CHIPS -->
+  </header>
   <div class="dest-scroll" id="destChips"></div>
-
-  <!-- BODY -->
-  <div class="body" id="bd"></div>
-
-  <!-- TAB BAR -->
-  <div class="tabbar" id="tabbar"></div>
-
+  <main class="body" id="bd"></main>
+  <nav class="tabbar" id="tabbar"></nav>
+</div>
+<div class="login-screen" id="loginScreen">
+  <div class="login-hanko">旅</div>
+  <div class="login-wordmark">WanderPlan</div>
+  <div class="login-sig">CheungKinFai Idea</div>
+  <div class="login-tagline" id="heroTitle">规划更聪明，<em>旅行更自在</em></div>
+  <div class="login-card">
+    <div class="login-field-label" id="loginTitle">输入邀请码</div>
+    <div id="loginSub" style="font-family:var(--mono);font-size:9px;line-height:1.7;color:rgba(245,241,234,.45);text-align:center;letter-spacing:1px;margin-bottom:14px">每位旅伴都有专属邀请码<br>输入后即可进入你的个人行程空间</div>
+    <input class="login-inp" id="inviteInput" placeholder="邀请码" autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" id="loginBtn2" onclick="doLogin()">ENTER</button>
+    <div class="login-err" id="loginErrMsg"></div>
+  </div>
+  <div class="login-footer" id="appVersion">v3.9 · CheungKinFai Idea</div>
 </div>
 
-<!-- PICKER OVERLAY -->
-<div class="picker-overlay" id="pickerOverlay" style="display:none" onclick="if(event.target===this)closePicker()">
+<!-- ===== ADMIN PANEL ===== -->
+<div id="adminPanel" style="display:none;position:fixed;inset:0;background:rgba(26,22,20,0.97);z-index:9999;overflow-y:auto;padding:40px 20px;font-family:var(--mono)">
+  <div style="max-width:480px;margin:0 auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px">
+      <div>
+        <div style="font-size:10px;letter-spacing:3px;color:var(--red);text-transform:uppercase;margin-bottom:4px">Admin</div>
+        <div style="font-size:20px;color:var(--fg);font-family:var(--serif)">邀请码管理</div>
+      </div>
+      <button onclick="closeAdmin()" style="background:transparent;border:1px solid rgba(255,255,255,0.2);color:var(--fg);width:36px;height:36px;border-radius:50%;font-size:16px;cursor:pointer">×</button>
+    </div>
+
+    <div id="adminCodeList" style="margin-bottom:24px"></div>
+
+    <div style="border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:20px;background:rgba(255,255,255,0.03)">
+      <div style="font-size:10px;letter-spacing:2px;color:rgba(245,241,234,0.4);margin-bottom:14px">新增邀请码</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <input id="adminNewCode" placeholder="邀请码 (大写)" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:10px 12px;color:var(--fg);font-family:var(--mono);font-size:12px;text-transform:uppercase">
+        <input id="adminNewName" placeholder="名字" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:10px 12px;color:var(--fg);font-family:var(--mono);font-size:12px">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <input id="adminNewInitials" placeholder="缩写 (2字母)" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:10px 12px;color:var(--fg);font-family:var(--mono);font-size:12px;text-transform:uppercase">
+        <input id="adminNewColor" type="color" value="#2E86AB" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:4px 8px;height:40px;width:100%;cursor:pointer">
+      </div>
+      <button onclick="adminAddCode()" style="width:100%;background:var(--red);border:none;color:#fff;font-family:var(--mono);font-size:11px;letter-spacing:2px;padding:12px;border-radius:4px;cursor:pointer">+ 添加邀请码</button>
+      <div id="adminMsg" style="font-size:10px;color:var(--red);text-align:center;margin-top:10px;min-height:16px"></div>
+    </div>
+
+    <div style="margin-top:16px;font-size:9px;color:rgba(245,241,234,0.25);text-align:center;line-height:1.8">
+      修改后立即生效 · 刷新页面后使用新邀请码登录
+    </div>
+  </div>
+</div>
+<!-- ===== MAP CHOICE DIALOG ===== -->
+<div id="mapDialog" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(26,22,20,0.6);align-items:flex-end;justify-content:center" onclick="closeMapDialog(event)">
+  <div style="background:var(--bg);border-radius:12px 12px 0 0;width:100%;max-width:480px;padding:24px 20px 36px;box-shadow:0 -4px 24px rgba(0,0,0,0.3)">
+    <div style="text-align:center;margin-bottom:6px">
+      <div id="mapDialogLabel" style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase">选择地图</div>
+      <div id="mapDialogName" style="font-family:var(--serif);font-size:17px;color:var(--ink);margin-top:4px"></div>
+    </div>
+    <div style="height:1px;background:var(--hair);margin:16px 0"></div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button onclick="doMapOpen('gaode')" style="width:100%;padding:14px;border:1px solid var(--hair2);border-radius:8px;background:transparent;font-family:var(--mono);font-size:12px;letter-spacing:1px;color:var(--ink);cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px">
+        <span style="font-size:20px">🗺</span>
+        <div><div style="font-weight:600">高德地图</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Amap · 中国大陆推荐</div></div>
+      </button>
+      <button onclick="doMapOpen('google')" style="width:100%;padding:14px;border:1px solid var(--hair2);border-radius:8px;background:transparent;font-family:var(--mono);font-size:12px;letter-spacing:1px;color:var(--ink);cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px">
+        <span style="font-size:20px">🌐</span>
+        <div><div style="font-weight:600">Google Maps</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Google 地图</div></div>
+      </button>
+    </div>
+    <button onclick="closeMapDialog()" id="mapDialogCancel" style="margin-top:14px;width:100%;padding:12px;border:none;border-radius:8px;background:var(--hair);font-family:var(--mono);font-size:11px;letter-spacing:1px;color:var(--muted);cursor:pointer">取消</button>
+  </div>
+</div>
+
+<div class="picker-overlay" id="pickerOverlay" style="display:none">
   <div class="picker-sheet">
     <div class="picker-hdr">
-      <div>
-        <div class="picker-ttl" id="pickerTitle">添加行程项</div>
-        <div class="picker-sub" id="pickerSub"></div>
-      </div>
-      <button class="picker-close" onclick="closePicker()">&#xD7;</button>
+      <div><div class="picker-ttl" id="pickerTitle">选择</div><div class="picker-sub" id="pickerSub">Select then confirm</div></div>
+      <button class="picker-close" onclick="closePicker()">×</button>
     </div>
     <div class="picker-list" id="pickerList"></div>
-    <div class="picker-ftr">
-      <button class="btn-red" id="pickerSaveBtn" onclick="savePicker()">确认</button>
-    </div>
- <script>
+    <div class="picker-ftr"><button class="btn-red" id="pickerSaveBtn" onclick="savePicker()">确认</button></div>
+  </div>
+</div>
+
+<!-- 腾讯云 CloudBase SDK -->
+<script>
 
 
 
@@ -517,7 +553,32 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15p
 
 
 
-var APP_VERSION='v3.1';
+
+var FEISHU_CONFIG = { app_id: "" };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+var APP_VERSION='v3.9';
 
 
 
@@ -666,7 +727,7 @@ var CURRENCIES=['HKD','CNY','AUD','USD','EUR','GBP','JPY','SGD'];
 var dests={
   chengdu:{
     id:'chengdu',cn:'成都',en:'Chengdu',start:'2026-04-16',end:'2026-04-20',currency:'CNY',
-    hotels:[{id:'h1',cn:'丽橙酒店',en:'Licheng Hotel',checkin:'2026-04-16',checkout:'2026-04-20'}],
+    hotels:[{id:'h1',cn:'丽晶大酒店',en:'Regent Hotel',checkin:'2026-04-16',checkout:'2026-04-20'}],
     places:[
       {id:'p1',cn:'武侯寺',en:'Wuhou Temple',area:'武侯区',kh:1.2,ka:49,mode:'walk',min:15,done:false},
       {id:'p2',cn:'锦里古街',en:'Jinli Street',area:'武侯区',kh:1.3,ka:49,mode:'walk',min:16,done:false},
@@ -693,12 +754,8 @@ var dests={
       {id:'r3',cn:'川菜清淡款',en:'Light Sichuan',loc:'',tag:'日常',eaten:false}
     ],
     expenses:[
-      {id:1,cat:'f',cn:'去程机票',en:'Outbound Flight',amount:2683,payer:'A',split:'all'},
-      {id:2,cat:'f',cn:'回程机票',en:'Return Flight',amount:2683,payer:'A',split:'all'},
-      {id:3,cat:'h',cn:'丽橙酒店 4晚',en:'Licheng Hotel 4n',amount:1562,payer:'A',split:'all'},
-      {id:4,cat:'t',cn:'熊猫基地门票',en:'Panda Base ticket',amount:230,payer:'B',split:'all'},
-      {id:5,cat:'m',cn:'餐饮',en:'Dining',amount:400,payer:'C',split:'all'},
-      {id:6,cat:'x',cn:'地铁+滴滴',en:'Metro+DiDi',amount:299,payer:'B',split:'all'}
+      {id:1,cat:'f',cn:'去程机票',en:'Outbound Flight',amount:2683,payer:'',split:'all'},
+      {id:2,cat:'f',cn:'回程机票',en:'Return Flight',amount:2683,payer:'',split:'all'},
     ]
   }
 };
@@ -717,7 +774,7 @@ var luggage={
     {l:{zh:'稳定器',en:'Osmo'},c:'电子'}
   ]
 };
-var members=[{id:'A',name:'Alex',col:AVC[0]},{id:'B',name:'Blake',col:AVC[1]},{id:'C',name:'Casey',col:AVC[2]}];
+var members=[];
 var S={dest:'chengdu',tab:'overview',prepareSub:'places',moreSub:'',schedDay:0,doneItems:{},doneLug:{},expNextId:50,pickerDay:null,pickerSel:[]};
 
 // ============ PERSIST ============
@@ -967,11 +1024,22 @@ function addHotel(){
     if(!confirm(L('hotelOverlapWarn')+'\n\n'+(LANG==='zh'?'是否仍要添加？':'Add anyway?')))return;
   }
   d.hotels.push(newH);
+  // Sync to budget as hotel expense
+  var _nights=nightsBetween(ci,co);
+  var _expName=cn.value.trim()+' '+(LANG==='zh'?_nights+'晚':_nights+' nights');
+  d.expenses.push({id:'hotel_'+id,cat:'h',cn:_expName,en:_expName,amount:0,payer:'',split:'all'});
   cn.value='';document.getElementById('hen').value='';
   ciEl.value='';coEl.value='';
   save();render();
 }
-function delHotel(id,e){e.stopPropagation();D().hotels=D().hotels.filter(function(h){return h.id!==id;});save();render();}
+function delHotel(id,e){
+  if(e)e.stopPropagation();
+  var d=D();
+  d.hotels=d.hotels.filter(function(h){return h.id!==id;});
+  // Remove from budget
+  d.expenses=d.expenses.filter(function(ex){return ex.id!=='hotel_'+id;});
+  save();render();
+}
 
 // ============ TRANSPORT ============
 function tpTypeChanged(){
@@ -1000,7 +1068,26 @@ function addTransport(){
   document.getElementById('tdate').value='';document.getElementById('tcost').value='';
   save();render();
 }
-function delTransport(id,e){e.stopPropagation();D().transport=D().transport.filter(function(t){return t.id!==id;});save();render();}
+function delTransport(id,e){
+  e.stopPropagation();
+  var d=D();
+  var sid=String(id);
+  // Remove from transport list
+  d.transport=d.transport.filter(function(t){return t.id!==id;});
+  // Remove from expenses
+  d.expenses=d.expenses.filter(function(ex){return ex.id!==id;});
+  // If segment transport, clear schedule segment data
+  if(sid.indexOf('segtp_')===0){
+    var sm=sid.match(/^segtp_(.+?)_(.+?)_(.+)$/);
+    if(sm){
+      var date=sm[1],from=sm[2],to=sm[3];
+      delete S.doneItems['seg_'+date+'_'+from+'_'+to];
+      delete S.doneItems['segcost_'+date+'_'+from+'_'+to];
+      delete S.doneItems['segpay_'+date+'_'+from+'_'+to];
+    }
+  }
+  save();render();
+}
 function updTpCost(el){
   var id=el.dataset.id;
   var d=D();
@@ -1171,7 +1258,51 @@ function chgAmt(el){
   }
   save();render();
 }
-function delExp(el){var id=el.dataset.eid;var numId=parseFloat(id);if(!isNaN(numId)&&String(numId)===id)id=numId;D().expenses=D().expenses.filter(function(e){return e.id!==id;});save();render();}
+function delExp(el){
+  var id=el.dataset.eid;
+  var numId=parseFloat(id);
+  if(!isNaN(numId)&&String(numId)===id) id=numId;
+  var sid=String(id);
+  // Hotel expense: confirm then delete hotel
+  if(sid.indexOf('hotel_')===0){
+    var hid=sid.slice(6);
+    var h=D().hotels.find(function(h){return h.id===hid;});
+    var hname=h?(h.cn||h.en):'?';
+    if(!confirm((LANG==='zh'?'确认删除住宿：':'Remove hotel: ')+hname+'?')) return;
+    delHotel(hid);
+    // Navigate to Stay tab
+    S.tab='prepare'; S.prepareSub='stay';
+    renderTabs(); render();
+    return;
+  }
+  var numId=parseFloat(id);
+  if(!isNaN(numId)&&String(numId)===id) id=numId;
+  var sid=String(id);
+  var d=D();
+  // If deleting a transport/segment expense, clear from transport list + schedule
+  if(sid.indexOf('segtp_')===0){
+    // Parse: segtp_DATE_FROM_TO
+    var sm=sid.match(/^segtp_(.+?)_(.+?)_(.+)$/);
+    if(sm){
+      var date=sm[1],from=sm[2],to=sm[3];
+      // Clear segment in S.doneItems (restores to empty in schedule)
+      delete S.doneItems['seg_'+date+'_'+from+'_'+to];
+      delete S.doneItems['segcost_'+date+'_'+from+'_'+to];
+      delete S.doneItems['segpay_'+date+'_'+from+'_'+to];
+      // Remove from transport list
+      d.transport=d.transport.filter(function(t){return t.id!==sid;});
+    }
+  } else if(sid.indexOf('sched_')===0){
+    // Deleting a schedule item expense - clear cost/payer in doneItems
+    var parts=sid.split('_');
+    var sdate=parts[1], spid=parts.slice(2).join('_');
+    delete S.doneItems['cost_'+sdate+'_'+spid];
+    delete S.doneItems['payer_'+sdate+'_'+spid];
+  } else {
+    // Regular expense - also clear from transport list if matched
+    d.transport=d.transport.filter(function(t){return t.id!==id;});
+  }
+  d.expenses=d.expenses.filter(function(e){return e.id!==id;});save();render();}
 function addExp(){
   var cn=document.getElementById('en');
   var amt=document.getElementById('ea');
@@ -1185,6 +1316,23 @@ function addExp(){
   var c=document.getElementById('ec').value;
   D().expenses.push({id:S.expNextId++,cat:c,cn:cn.value.trim(),en:cn.value.trim(),amount:parseFloat(amt.value),payer:p,split:sp});
   cn.value='';amt.value='';save();render();
+}
+function delMember(idx){
+  idx = parseInt(idx);
+  if(members.length<=1){
+    alert(LANG==='zh'?'至少保留一位旅伴':'Keep at least one member');
+    return;
+  }
+  var m = members[idx];
+  if(!m) return;
+  if(!confirm((LANG==='zh'?'删除旅伴：':'Remove member: ')+m.name+'?')) return;
+  // Remove member from expenses that have this payer
+  D().expenses.forEach(function(e){
+    if(e.payer===m.id) e.payer='';
+    if(e.split===m.id) e.split='all';
+  });
+  members.splice(idx,1);
+  save(); render();
 }
 function addMember(){
   if(members.length>=6)return;
@@ -1207,12 +1355,112 @@ var INVITE_CODES = {
 };
 
 // ---- Feishu config (fill in after you register) ----
-var FEISHU_CONFIG = {
-  app_id:     '',          // e.g. 'cli_xxxxxx'
-  app_secret: '',          // e.g. 'xxxxxxxxxxxxxxxx'
-  spreadsheet_token: '',   // e.g. 'shtcnxxxxxxxxxxxxxx'
-  // Each invite code maps to one sheet in the same spreadsheet
-};
+// ── 云同步配置 ──
+var CF_URL = 'https://wanderplan-d4gxsxra5f477a827-1430285629.ap-shanghai.app.tcloudbase.com/wanderplan_sync';
+var _cloudSyncReady = false;
+var _localUpdatedAt = null;
+
+function initCloudBase() {
+  // HTTP API mode - no SDK needed, mark ready immediately
+  _cloudSyncReady = true;
+  console.log('[WP] Cloud sync ready (HTTP)');
+}
+
+// Cloud save: write all data under user's doc (id = invite code)
+function cloudSave() {
+  if(!currentUser) { updateSyncIndicator('offline'); return; }
+  if(!_cloudSyncReady) {
+    console.warn('[WP] cloudSave skipped: not ready');
+    updateSyncIndicator('offline');
+    return;
+  }
+  var payload = {
+    dests: dests,
+    luggage: luggage,
+    members: members,
+    state: { doneItems: S.doneItems, doneLug: S.doneLug, dest: S.dest }
+  };
+  console.log('[WP] cloudSave → sending for', currentUser.code);
+  fetch(CF_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      action: 'set',
+      inviteCode: currentUser.code,
+      data: payload,
+      localTs: _localUpdatedAt || Date.now()
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(result){
+    console.log('[WP] cloudSave result:', JSON.stringify(result));
+    if(result && result.code === 1) {
+      console.log('[WP] Cloud newer, reloading...');
+      _applyCloudData(result.data);
+      renderAll();
+    }
+    updateSyncIndicator('synced');
+  })
+  .catch(function(e){
+    console.warn('[WP] cloudSave error:', e);
+    updateSyncIndicator('offline');
+  });
+}
+
+// Cloud load: pull data for this user
+function _applyCloudData(doc) {
+  if(doc.dests)   dests   = doc.dests;
+  if(doc.luggage) luggage = doc.luggage;
+  if(doc.members) members = doc.members;
+  if(doc.state) {
+    S.doneItems = doc.state.doneItems || {};
+    S.doneLug   = doc.state.doneLug   || {};
+    if(doc.state.dest && dests[doc.state.dest]) S.dest = doc.state.dest;
+  }
+  localSave();
+}
+function cloudLoad(callback) {
+  if(!currentUser) { updateSyncIndicator('offline'); if(callback) callback(false); return; }
+  updateSyncIndicator('syncing');
+  console.log('[WP] cloudLoad → fetching for', currentUser.code);
+  fetch(CF_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ action: 'get', inviteCode: currentUser.code })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(result){
+    console.log('[WP] cloudLoad result:', JSON.stringify(result).substring(0,200));
+    var doc = result && result.data;
+    if(doc && doc.dests) {
+      var cloudTs = doc.localTs || 0;
+      var localTs2 = _localUpdatedAt || 0;
+      if(cloudTs >= localTs2) {
+        _applyCloudData(doc);
+        console.log('[WP] Loaded from cloud ✓');
+      } else {
+        console.log('[WP] Local is newer - pushing to cloud');
+        cloudSave();
+      }
+      _cloudSyncReady = true;
+      updateSyncIndicator('synced');
+      if(callback) callback(true);
+    } else {
+      // DB empty = new user, push local data up
+      console.log('[WP] No cloud data found, pushing local data up');
+      _cloudSyncReady = true;
+      updateSyncIndicator('synced');
+      cloudSave();
+      if(callback) callback(false);
+    }
+  })
+  .catch(function(e){
+    console.warn('[WP] cloudLoad error:', e.message||e);
+    updateSyncIndicator('offline');
+    if(callback) callback(false);
+  });
+}
+
 
 var currentUser = null;  // { code, name, initials, color, feishuSheet }
 var syncStatus = 'offline'; // 'synced' | 'syncing' | 'offline'
@@ -1224,6 +1472,14 @@ function doLogin() {
   var code = input.value.trim().toUpperCase();
   var errEl = document.getElementById('loginErrMsg');
   var btnEl = document.getElementById('loginBtn2');
+
+  // ── 管理员入口 ──
+  if (code === 'TIMC803') {
+    input.value = '';
+    errEl.textContent = '';
+    openAdmin();
+    return;
+  }
 
   if (!code) {
     input.classList.add('err');
@@ -1245,15 +1501,23 @@ function doLogin() {
   btnEl.classList.add('loading');
   S.tab = 'overview';
 
-  // Try to load from Feishu cloud first; fall back to localStorage
+  // Load from localStorage first, then sync with cloud
   loadUserData(function() {
-    btnEl.classList.remove('loading');
-    document.getElementById('loginScreen').style.display = 'none';
     updateUserBadge();
-    updateSyncIndicator('synced');
-    try { localStorage.setItem('wp4_lastCode', code); } catch(e) {}
     S.tab = 'overview';
     renderAll();
+    // Show clear cache button
+    var cb = document.getElementById('clearCacheBtn');
+    if (cb) cb.style.display = 'inline-block';
+    // Cloud load after local render
+    setTimeout(function(){
+      cloudLoad(function(loaded){
+        if(loaded) renderAll();
+        startAutoPoll(); // start 60s auto-poll
+      });
+    }, 300);
+    btnEl.classList.remove('loading');
+    document.getElementById('loginScreen').style.display = 'none';
   });
 }
 
@@ -1338,29 +1602,285 @@ function feishuSave(data) {
 function save() {
   if (!currentUser) return;
   localSave();
-  // Debounce cloud saves: wait 2s of inactivity then push to Feishu
+  // Debounce cloud save (1.5s after last change)
   updateSyncIndicator('syncing');
   if (syncTimer) clearTimeout(syncTimer);
   syncTimer = setTimeout(function() {
-    if (FEISHU_CONFIG.app_id && currentUser.feishuSheet) {
-      feishuSave({ dests: dests, luggage: luggage, members: members });
-    }
-    updateSyncIndicator('synced');
-  }, 2000);
+    cloudSave();
+  }, 1500);
 }
 
 // ---- UI HELPERS ----
 function logout() {
   if (!confirm(LANG === 'zh' ? '退出登录？' : 'Log out?')) return;
+  stopAutoPoll();
   currentUser = null;
+  var cb = document.getElementById('clearCacheBtn');
+  if (cb) cb.style.display = 'none';
   try { localStorage.removeItem('wp4_lastCode'); } catch(e) {}
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('inviteInput').value = '';
   document.getElementById('loginErrMsg').textContent = '';
 }
 
+// ---- 清除本地缓存（三击小红点触发）----
+function clearLocalCache() {
+  var msg = LANG === 'zh'
+    ? '清除本机缓存？\n云端数据不受影响，重新登录后会从云端重新加载。'
+    : 'Clear local cache?\nCloud data is safe. Re-login to reload from cloud.';
+  if (!confirm(msg)) return;
+  stopAutoPoll();
+  try {
+    var toRemove = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.startsWith('wp4_')) toRemove.push(k);
+    }
+    toRemove.forEach(function(k){ localStorage.removeItem(k); });
+  } catch(e) {}
+  alert(LANG === 'zh' ? '✓ 缓存已清除，请重新登录' : '✓ Cache cleared. Please log in again.');
+  currentUser = null;
+  var cb = document.getElementById('clearCacheBtn');
+  if (cb) cb.style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('inviteInput').value = '';
+  document.getElementById('loginErrMsg').textContent = '';
+}
+
+// ---- 自动轮询云端（每60秒）----
+var _autoPollTimer = null;
+function startAutoPoll() {
+  stopAutoPoll();
+  _autoPollTimer = setInterval(function(){
+    if (!currentUser) { stopAutoPoll(); return; }
+    fetch(CF_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ action: 'get', inviteCode: currentUser.code })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(result){
+      var doc = result && result.data;
+      if (!doc || !doc.dests) return;
+      var cloudTs = doc.localTs || 0;
+      var localTs2 = _localUpdatedAt || 0;
+      if (cloudTs > localTs2) {
+        console.log('[WP] Auto-poll: cloud newer, refreshing');
+        _applyCloudData(doc);
+        _localUpdatedAt = cloudTs;
+        renderAll();
+        updateSyncIndicator('synced');
+      }
+    })
+    .catch(function(){});
+  }, 60000);
+}
+function stopAutoPoll() {
+  if (_autoPollTimer) { clearInterval(_autoPollTimer); _autoPollTimer = null; }
+}
+
+// ============ MAP NAVIGATION ============
+var _mapCurrentName = '';
+
+function openMapChoice(e, name) {
+  e.stopPropagation();
+  _mapCurrentName = name;
+  var dlg = document.getElementById('mapDialog');
+  var nameEl = document.getElementById('mapDialogName');
+  var labelEl = document.getElementById('mapDialogLabel');
+  var cancelEl = document.getElementById('mapDialogCancel');
+  if (nameEl) nameEl.textContent = name;
+  if (labelEl) labelEl.textContent = LANG === 'zh' ? '选择地图打开' : 'Open in Maps';
+  if (cancelEl) cancelEl.textContent = LANG === 'zh' ? '取消' : 'Cancel';
+  dlg.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeMapDialog(e) {
+  if (e && e.target !== document.getElementById('mapDialog')) return;
+  document.getElementById('mapDialog').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function doMapOpen(app) {
+  var q = encodeURIComponent(_mapCurrentName);
+  var url = '';
+  if (app === 'gaode') {
+    // 高德地图网页版 - 直接跳转，手机上会提示打开 App
+    url = 'https://uri.amap.com/search?keyword=' + q + '&src=uriapi';
+  } else if (app === 'google') {
+    // Google Maps - 手机上会唤起 App
+    url = 'https://www.google.com/maps/search/' + q;
+  }
+  document.getElementById('mapDialog').style.display = 'none';
+  document.body.style.overflow = '';
+  if (url) window.location.href = url;
+}
+
+// ============ ADMIN PANEL ============
+var ADMIN_COLORS = ['#1D9E75','#534AB7','#D85A30','#BA7517','#2E86AB','#B5462A','#7C5CBF','#3D8A6E','#C44D58','#4A90D9'];
+
+function openAdmin() {
+  var panel = document.getElementById('adminPanel');
+  panel.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  // 每次打开都从云端拉取最新邀请码
+  adminLoadCodes(function(){ renderAdminList(); });
+}
+
+function closeAdmin() {
+  document.getElementById('adminPanel').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// 从云端读取邀请码
+function adminLoadCodes(callback) {
+  var list = document.getElementById('adminCodeList');
+  list.innerHTML = '<div style="color:rgba(245,241,234,0.3);font-size:11px;text-align:center;padding:20px">加载中...</div>';
+  fetch(CF_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ action: 'getAdminCodes', adminKey: 'TIMC803' })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(result){
+    if (result && result.code === 0 && result.codes) {
+      // 云端有数据，合并到 INVITE_CODES（保留默认码，覆盖云端码）
+      var cloudCodes = result.codes;
+      Object.keys(cloudCodes).forEach(function(k){ INVITE_CODES[k] = cloudCodes[k]; });
+      // 删除云端已删除的非默认码
+      var defaultCodes = ['DEMO','KAREN','WUYING','ALEX','LULU'];
+      Object.keys(INVITE_CODES).forEach(function(k){
+        if (defaultCodes.indexOf(k) === -1 && !cloudCodes[k]) delete INVITE_CODES[k];
+      });
+    }
+    if (callback) callback();
+  })
+  .catch(function(){
+    // 云端读取失败，用本地现有数据
+    if (callback) callback();
+  });
+}
+
+// 把当前 INVITE_CODES 保存到云端
+function adminSaveCodes(callback) {
+  fetch(CF_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ action: 'setAdminCodes', adminKey: 'TIMC803', codes: INVITE_CODES })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(result){
+    console.log('[WP] adminSaveCodes result:', result);
+    if (callback) callback(result && result.code === 0);
+  })
+  .catch(function(){
+    if (callback) callback(false);
+  });
+}
+
+function renderAdminList() {
+  var list = document.getElementById('adminCodeList');
+  var codes = Object.keys(INVITE_CODES);
+  if (codes.length === 0) {
+    list.innerHTML = '<div style="color:rgba(245,241,234,0.3);font-size:11px;text-align:center;padding:20px">暂无邀请码</div>';
+    return;
+  }
+  list.innerHTML = codes.map(function(code) {
+    var u = INVITE_CODES[code];
+    return '<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid rgba(255,255,255,0.08);border-radius:6px;margin-bottom:8px;background:rgba(255,255,255,0.02)">'
+      + '<div style="width:36px;height:36px;border-radius:50%;background:'+u.color+';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;flex-shrink:0">'+u.initials+'</div>'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-size:13px;color:var(--fg);font-family:var(--serif)">'+u.name+'</div>'
+      + '<div style="font-size:10px;color:rgba(245,241,234,0.35);letter-spacing:2px;margin-top:2px">'+code+'</div>'
+      + '</div>'
+      + '<button onclick="adminDeleteCode(\''+code+'\')" style="background:transparent;border:1px solid rgba(181,70,42,0.4);color:var(--red);width:30px;height:30px;border-radius:4px;font-size:14px;cursor:pointer;flex-shrink:0">×</button>'
+      + '</div>';
+  }).join('');
+}
+
+function adminAddCode() {
+  var code = document.getElementById('adminNewCode').value.trim().toUpperCase();
+  var name = document.getElementById('adminNewName').value.trim();
+  var initials = document.getElementById('adminNewInitials').value.trim().toUpperCase();
+  var color = document.getElementById('adminNewColor').value;
+  var msg = document.getElementById('adminMsg');
+
+  if (!code || !name || !initials) { msg.textContent = '请填写邀请码、名字和缩写'; return; }
+  if (code === 'TIMC803') { msg.textContent = '此码为管理员专用，不可添加'; return; }
+  if (INVITE_CODES[code]) { msg.textContent = '该邀请码已存在'; return; }
+
+  INVITE_CODES[code] = { name: name, initials: initials.substring(0,2), color: color, feishuSheet: name };
+  msg.textContent = '保存中...';
+
+  adminSaveCodes(function(ok){
+    if (ok) {
+      document.getElementById('adminNewCode').value = '';
+      document.getElementById('adminNewName').value = '';
+      document.getElementById('adminNewInitials').value = '';
+      msg.textContent = '✓ 已添加 ' + code + '，全平台立即生效';
+      setTimeout(function(){ msg.textContent = ''; }, 3000);
+      renderAdminList();
+    } else {
+      msg.textContent = '⚠ 云端保存失败，请检查网络';
+    }
+  });
+}
+
+function adminDeleteCode(code) {
+  if (!confirm('删除邀请码 ' + code + '？\n该用户将无法登录，但云端行程数据保留。')) return;
+  delete INVITE_CODES[code];
+  var msg = document.getElementById('adminMsg');
+  msg.textContent = '保存中...';
+  adminSaveCodes(function(ok){
+    if (ok) {
+      msg.textContent = '✓ 已删除 ' + code + '，全平台立即生效';
+      setTimeout(function(){ msg.textContent = ''; }, 3000);
+    } else {
+      msg.textContent = '⚠ 云端保存失败，请检查网络';
+    }
+    renderAdminList();
+  });
+}
+
+// 启动时从云端加载邀请码（静默，不影响登录体验）
+(function(){
+  setTimeout(function(){
+    fetch(CF_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ action: 'getAdminCodes', adminKey: 'TIMC803' })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(result){
+      if (result && result.code === 0 && result.codes) {
+        Object.keys(result.codes).forEach(function(k){ INVITE_CODES[k] = result.codes[k]; });
+        console.log('[WP] Admin codes loaded from cloud:', Object.keys(result.codes).length, 'codes');
+      }
+    })
+    .catch(function(){});
+  }, 1000);
+})();
+
+
+
 
 // ============ INIT ============
+setTimeout(initCloudBase, 100); // defer SDK init
+// Sync hotel expenses on load
+try{
+  var _dh=D();
+  _dh.hotels.forEach(function(h){
+    var expId='hotel_'+h.id;
+    if(!_dh.expenses.find(function(e){return e.id===expId;})){
+      var ci=h.cin||h.checkin||'', co=h.cout||h.checkout||'';
+      var _n=ci&&co?nightsBetween(ci,co):0;
+      var _nm=(h.cn||h.en)+(_n>0?' '+(LANG==='zh'?_n+'晚':_n+' nights'):'');
+      _dh.expenses.push({id:expId,cat:'h',cn:_nm,en:_nm,amount:0,payer:'',split:'all'});
+    }
+  });
+  save();
+}catch(e){}
 // Ensure default transport items exist
 try{
   var _d=D();
@@ -1376,7 +1896,7 @@ try{
   }
 }catch(e){}
 // Update login footer version
-try{var _vEl=document.getElementById('appVersion');if(_vEl)_vEl.textContent=APP_VERSION+' · 京都和纸';}catch(e){}
+try{var _vEl=document.getElementById('appVersion');if(_vEl)_vEl.textContent=APP_VERSION+' · CheungKinFai Idea';}catch(e){}
 // Load lang + theme preference
 try { var _lang = localStorage.getItem('wp4_lang'); if(_lang) LANG = _lang; } catch(e) {}
 try { var _thm = localStorage.getItem('wp4_theme'); if(_thm) THEME = _thm; } catch(e) {}
@@ -1390,14 +1910,8 @@ document.getElementById('loginSub').innerHTML = LANG === 'zh'
   ? '每位旅伴都有专属邀请码<br>输入后即可进入你的个人行程空间'
   : 'Each traveller has a unique invite code<br>Enter yours to access your personal trip space';
 
-// Try auto-login with remembered code
-try {
-  var _lastCode = localStorage.getItem('wp4_lastCode');
-  if (_lastCode && INVITE_CODES[_lastCode]) {
-    document.getElementById('inviteInput').value = _lastCode;
-    doLogin();
-  }
-} catch(e) {}
+// Login is intentionally required every time on hosted/cloud version.
+// No auto-login from localStorage.
 
 
 // ============ RENDER ENGINE · WASHI ============
@@ -1700,6 +2214,66 @@ function setSegmentMode(el){
 // ── DRAG TO REORDER SCHEDULE ITEMS ──
 var _dragDate=null, _dragPid=null, _dragIdx=-1;
 
+// ── 手机触摸拖动支持 ──
+var _touchDragging=false, _touchClone=null, _touchStartY=0, _touchDragEl=null;
+
+document.addEventListener('touchstart', function(e){
+  var handle = e.target.closest('.tl-left');
+  if(!handle) return;
+  var item = handle.closest('.tl-item');
+  if(!item) return;
+  _touchDragEl = item;
+  _touchStartY = e.touches[0].clientY;
+  _touchDragging = false;
+  // Long-press 150ms to start drag
+  handle._touchTimer = setTimeout(function(){
+    _touchDragging = true;
+    _dragDate = item.dataset.date;
+    _dragPid  = item.dataset.pid;
+    _dragIdx  = parseInt(item.dataset.idx)||0;
+    // Visual clone
+    _touchClone = item.cloneNode(true);
+    _touchClone.style.cssText = 'position:fixed;left:0;right:0;z-index:9000;opacity:0.85;pointer-events:none;background:var(--bg);box-shadow:0 4px 20px rgba(0,0,0,0.25);';
+    _touchClone.style.top = item.getBoundingClientRect().top + 'px';
+    document.body.appendChild(_touchClone);
+    item.classList.add('dragging');
+  }, 150);
+},{passive:true});
+
+document.addEventListener('touchmove', function(e){
+  if(!_touchDragging || !_touchClone) return;
+  e.preventDefault();
+  var y = e.touches[0].clientY;
+  _touchClone.style.top = (y - 40) + 'px';
+  // Find target item under finger
+  _touchClone.style.display='none';
+  var el = document.elementFromPoint(e.touches[0].clientX, y);
+  _touchClone.style.display='';
+  var target = el ? el.closest('.tl-item') : null;
+  document.querySelectorAll('.tl-item').forEach(function(t){t.classList.remove('drag-over');});
+  if(target && target !== _touchDragEl) target.classList.add('drag-over');
+},{passive:false});
+
+document.addEventListener('touchend', function(e){
+  if(e.target.closest('.tl-left') && e.target.closest('.tl-left')._touchTimer){
+    clearTimeout(e.target.closest('.tl-left')._touchTimer);
+  }
+  if(!_touchDragging){ _touchDragging=false; return; }
+  _touchDragging=false;
+  if(_touchClone){ _touchClone.remove(); _touchClone=null; }
+  document.querySelectorAll('.tl-item').forEach(function(t){
+    t.classList.remove('dragging'); t.classList.remove('drag-over');
+  });
+  // Find drop target
+  var y = e.changedTouches[0].clientY;
+  var el = document.elementFromPoint(e.changedTouches[0].clientX, y);
+  var target = el ? el.closest('.tl-item') : null;
+  if(!target || !_dragPid || target === _touchDragEl) return;
+  // Reuse existing drop logic
+  var fakeE = { preventDefault:function(){}, currentTarget: target };
+  tlDrop(fakeE);
+},{passive:true});
+
 function tlDragStart(e){
   var el=e.currentTarget||e.target;
   while(el&&!el.dataset.pid) el=el.parentElement;
@@ -1819,7 +2393,10 @@ function rSchedule() {
   var hotelBand = hotels.length
     ? '<div class="hotel-band">'+ico('stay',12,'var(--red)')+'<span class="hotel-band-txt">HOTEL</span>'
       +hotels.map(function(h){return '<span class="hotel-band-name">'+hn(h)+'</span>';}).join(' · ')+'</div>'
-    : '<div class="hotel-band hotel-band-none">'+ico('stay',12,'#C4891C')+'<span class="hotel-band-txt" style="color:#C4891C">'+(LANG==='zh'?'未设酒店':'NO HOTEL SET')+'</span></div>';
+    : '<div class="hotel-band hotel-band-none">'+ico('stay',12,'#C4891C')
+    +'<span class="hotel-band-txt" style="color:#C4891C">'+(LANG==='zh'?'未设酒店':'NO HOTEL SET')+'</span>'
+    +'<button onclick="S.tab=\'prepare\';S.prepareSub=\'stay\';renderTabs();render()" style="margin-left:10px;font-family:var(--mono);font-size:9px;padding:3px 8px;background:transparent;color:#C4891C;border:1px solid #C4891C;cursor:pointer;letter-spacing:0.5px">'+(LANG==="zh"?"添加住宿":"Add hotel")+'→</button>'
+    +'</div>';
 
   // timeline items
   var firstHotel = hotels.length ? hotels[0] : null;
@@ -1914,15 +2491,22 @@ function rSchedule() {
     var kindColors = {sight:'var(--red)',food:'#8B5E14',transit:'var(--muted)',stay:'#2E6DA4'};
     var kindCol = kindColors[itemIco]||'var(--red)';
 
+    // 地图跳转按钮（仅景点和餐饮显示，交通/住宿不显示）
+    var _hasMap = (!isTp && !isHotel);
+    var _safeItemName = itemName.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+
     return '<div class="tl-item'+(isDone?' done':'')+'" draggable="true"'
       +' data-date="'+day.date+'" data-pid="'+pid+'" data-idx="'+i+'"'
       +' ondragstart="tlDragStart(event)" ondragover="tlDragOver(event)" ondrop="tlDrop(event)"'
-      +' ondragend="tlDragEnd(event)" style="cursor:grab">'
-      +'<div class="tl-left">'
-      +'<div style="font-size:14px;color:var(--muted);text-align:center;margin-bottom:4px;cursor:grab;user-select:none">⠿</div>'
+      +' ondragend="tlDragEnd(event)">'
+      // ── 左栏：拖动区 + 时间 + nº编号 ──
+      +'<div class="tl-left" style="touch-action:none;cursor:grab;user-select:none"'
+      +' ondragstart="tlDragStart(event)">'
+      +'<div style="font-size:14px;color:var(--muted);text-align:center;margin-bottom:4px">⠿</div>'
       +'<div class="tl-time">'+(arrTime?'<span style="font-size:10px;color:'+kindCol+';font-weight:600;line-height:1.3">'+arrTime+'</span>':'')+'</div>'
       +'<div class="tl-no" style="color:'+kindCol+'">'+nNum+'</div>'
       +'</div>'
+      // ── 中间：景点信息 ──
       +'<div class="tl-right">'
       +'<div class="tl-kind" onclick="tglSchedItem(this.dataset.date,this.dataset.pid)" data-date="'+day.date+'" data-pid="'+pid+'" style="cursor:pointer">'
       +ico(itemIco,11,kindCol)
@@ -1935,7 +2519,13 @@ function rSchedule() {
       +noteRow
       +costRow
       +'</div>'
-      +'<button class="del-btn" style="font-size:15px;padding:0 4px;margin-top:14px" onclick="removeFromDay(this.dataset.date,this.dataset.pid,event)" data-date="'+day.date+'" data-pid="'+pid+'">&#xD7;</button>'
+      // ── 右栏：删除键 + 地图按钮 ──
+      +'<div style="display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:12px;flex-shrink:0">'
+      +'<button class="del-btn" style="font-size:15px;padding:0 4px" onclick="removeFromDay(this.dataset.date,this.dataset.pid,event)" data-date="'+day.date+'" data-pid="'+pid+'">&#xD7;</button>'
+      +(_hasMap
+        ? '<button onclick="openMapChoice(event,\''+_safeItemName+'\')" style="display:flex;flex-direction:column;align-items:center;gap:1px;background:transparent;border:none;cursor:pointer;padding:2px;color:var(--muted);line-height:1"><span style="font-size:13px">📍</span><span style="font-family:var(--mono);font-size:7px;letter-spacing:0.5px">'+(LANG==='zh'?'前往':'Nav')+'</span></button>'
+        : '')
+      +'</div>'
       +'</div>';
 
   });
@@ -2106,15 +2696,20 @@ function rStay() {
   var d = D();
   var overlap = hotelsOverlap(d.hotels);
   var items = d.hotels.map(function(h){
-    return '<div class="stay-item" style="flex-wrap:wrap;padding:14px 16px;margin:0 12px 8px;background:var(--card);border-radius:2px">'
+    return '<div class="stay-item" style="flex-wrap:wrap;padding:14px 22px;border-bottom:1px solid var(--hair)">'
       +'<div class="stay-icon">🏨</div>'
       +'<div style="flex:1;min-width:0">'
       +'<div class="stay-name">'+hn(h)+'</div>'
-      +'<div class="stay-dates" style="color:var(--red)">'
-      +(LANG==='zh'?'入住 ':'In ')+fmtDate(h.cin||h.checkin)
-      +' → '+(LANG==='zh'?'退房 ':'Out ')+fmtDate(h.cout||h.checkout)
-      +' · '+(nightsBetween(h.cin||h.checkin||'', h.cout||h.checkout||''))+'n'
-      +'</div>'
+      +function(){
+        var _cin=h.cin||h.checkin||'', _cout=h.cout||h.checkout||'';
+        var _nights=nightsBetween(_cin,_cout);
+        var _err=_cin&&_cout&&_cout<=_cin;
+        var _col=_err?'var(--err)':'var(--muted)';
+        var _txt=_err
+          ?(LANG==='zh'?'⚠️ 退房日期错误！请修正':'⚠️ Invalid dates! Check-out must be after check-in')
+          :(LANG==='zh'?'入住 ':'In ')+fmtDate(_cin)+' → '+(LANG==='zh'?'退房 ':'Out ')+fmtDate(_cout)+' · '+_nights+(LANG==='zh'?'晚':' nights');
+        return '<div class="stay-dates" style="color:'+_col+';font-family:var(--mono);font-size:10px;letter-spacing:0.5px">'+_txt+'</div>';
+      }()
       +'<div style="display:flex;gap:6px;margin-top:6px">'
       +'<input type="date" value="'+(h.cin||h.checkin||'')+'" onchange="updHotel(this)" data-hid="'+h.id+'" data-field="cin" style="font-family:var(--mono);font-size:11px;padding:3px 5px;border:1px solid var(--hair2);background:var(--bg);color:var(--ink)">'
       +'<input type="date" value="'+(h.cout||h.checkout||'')+'" onchange="updHotel(this)" data-hid="'+h.id+'" data-field="cout" style="font-family:var(--mono);font-size:11px;padding:3px 5px;border:1px solid var(--hair2);background:var(--bg);color:var(--ink)">'
@@ -2126,11 +2721,13 @@ function rStay() {
   var overlapWarn = overlap ? '<div style="background:rgba(181,70,42,0.08);border-left:3px solid var(--red);padding:10px 16px;font-family:var(--mono);font-size:10px;color:var(--red);margin:0 22px 16px">'+(LANG==='zh'?'日期重叠！请检查住宿':'DATE OVERLAP! Please check hotels')+'</div>' : '';
 
   return '<div class="page-header"><div class="page-title-jp">'+(LANG==='zh'?'住宿':'Stay')+'</div></div>'
+    +'<div style="padding:0">'
     +overlapWarn+items
+    +'</div>'
     +'<div class="tp-add-form">'
     +'<div class="section-label" style="margin-bottom:14px">'+(LANG==='zh'?'添加住宿':'ADD HOTEL')+'</div>'
-    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'酒店名称':'Hotel Name')+' <span class="req">*</span></div><input class="f-inp" id="hcn" placeholder="'+ph('丽橙酒店','Licheng Hotel')+'"></div>'
-    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'英文名':'English name')+'</div><input class="f-inp" id="hen" placeholder="'+ph('丽橙酒店','Licheng Hotel')+'"></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'酒店名称':'Hotel Name')+' <span class="req">*</span></div><input class="f-inp" id="hcn" placeholder="'+ph('丽晶大酒店','Regent Hotel')+'"></div>'
+    +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'英文名':'English name')+'</div><input class="f-inp" id="hen" placeholder="'+ph('丽晶大酒店','Regent Hotel')+'"></div>'
     +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'入住日期 (彝日)':'Check-in date')+'</div><input class="f-inp" type="date" id="hcin"></div>'
     +'<div class="f-group"><div class="f-label">'+(LANG==='zh'?'退房日期 (彝日)':'Check-out date')+'</div><input class="f-inp" type="date" id="hcout"></div>'
     +'<button class="btn-red" onclick="addHotel()">＋ '+(LANG==='zh'?'添加':'Add')+'</button>'
@@ -2372,8 +2969,12 @@ function rBudget() {
 
   // members
   var memberHtml = '<div class="budget-members">'
-    +members.map(function(m){
-      return '<div class="m-card"><div class="m-av" style="width:36px;height:36px;font-size:12px;background:'+m.col.bg+';color:'+m.col.tx+'">'+m.name.slice(0,2).toUpperCase()+'</div><div class="m-name">'+m.name+'</div></div>';
+    +members.map(function(m,mi){
+      return '<div class="m-card" style="position:relative">'
+        +'<div class="m-av" style="width:36px;height:36px;font-size:12px;background:'+m.col.bg+';color:'+m.col.tx+'">'+m.name.slice(0,2).toUpperCase()+'</div>'
+        +'<div class="m-name">'+m.name+'</div>'
+        +'<button onclick="delMember(this.dataset.idx)" data-idx="'+mi+'" style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;background:var(--red);color:white;border:none;font-size:10px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>'
+        +'</div>';
     }).join('')
     +(members.length<6?'<div class="m-card"><div class="m-add" style="width:36px;height:36px" onclick="addMember()">+</div><div class="m-name">'+(LANG==='zh'?'添加':'Add')+'</div></div>':'')
     +'</div>';
@@ -2389,7 +2990,7 @@ function rBudget() {
     +'<div class="budget-total">'
     +'<div class="total-mono">TOTAL · '+(LANG==='zh'?'合计':'TRIP')+'</div>'
     +'<div class="total-amount"><span class="total-sym">'+curSym+'</span><div class="total-num">'+Math.round(total).toLocaleString()+'</div></div>'
-    +'<div class="total-per">'+(LANG==='zh'?'per person · ':'per person · ')+curSym+half.toFixed(2)+'</div>'
+    +'<div class="total-per">'+(LANG==='zh'?'每人 · ':'per person · ')+curSym+half.toFixed(2)+'</div>'
     +'</div>'
     +'<div class="red-rule" style="margin:0 22px 18px"></div>'
     // members + settle
@@ -2444,6 +3045,8 @@ function renderPickerList() {
         +'<div style="flex:1"><div class="pi-name">'+name+'</div><div class="pi-sub">'+sub+'</div></div>'
         +(dist?'<div class="pi-dist">'+dist+'</div>':'')+'</div>';
     }).join('') || '<div style="padding:20px 22px;font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:2px">'+(LANG==='zh'?'先在准备>景点添加':'Add in Prepare > Sights')+'</div>';
+  // Always show 'go to places' button at bottom
+  items += '<div style="padding:8px 22px;border-top:1px solid var(--hair)"><button onclick="closePicker();goFlow(\'prepare\',\'places\')" style="font-family:var(--mono);font-size:10px;padding:6px 14px;color:var(--red);border:1px solid var(--red);background:transparent;cursor:pointer">'+(LANG==='zh'?'前往添加景点 →':'Go to places →')+'</button></div>';
   } else if(cat==='food') {
     items = d.restaurants.map(function(r){
       var sel=S.pickerSel.indexOf('r_'+r.id)>=0;
@@ -2461,7 +3064,14 @@ function renderPickerList() {
       +'<button style="padding:8px 14px;background:var(--red);color:white;border:none;font-family:var(--mono);font-size:12px;cursor:pointer;flex-shrink:0" onclick="pickerAddFood()">+</button>'
       +'</div></div>';
   } else if(cat==='stay') {
-    items=d.hotels.map(function(h){
+    var _pickDay=S.pickerDay||'';
+    var _dayHotels=d.hotels.filter(function(h){
+      if(!_pickDay) return true; // no day filter
+      var ci=h.cin||h.checkin||'', co=h.cout||h.checkout||'';
+      if(!ci||!co) return true; // no dates set yet, show anyway
+      return _pickDay>=ci && _pickDay<co; // covers this night
+    });
+    items=_dayHotels.map(function(h){
       var hpid='h_'+h.id;
       var sel=S.pickerSel.indexOf(hpid)>=0;
       var cin=h.cin||h.checkin||'',cout=h.cout||h.checkout||'';
@@ -2470,7 +3080,10 @@ function renderPickerList() {
         +'<div style="flex:1"><div class="pi-name">'+hn(h)+'</div>'
         +(cin?'<div class="pi-sub">'+fmtDate(cin)+' → '+fmtDate(cout)+'</div>':'')
         +'</div><div class="pi-dist">🏨</div></div>';
-    }).join('')||'<div style="padding:20px 22px;font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:2px">'+(LANG==='zh'?'先在准备>住宿添加':'Add in Prepare > Stay')+'</div>'
+    }).join('')||'<div style="padding:20px 22px">'
+      +'<div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:2px;margin-bottom:12px">'+(LANG==='zh'?'暂无匹配住宿':'No hotels for this day')+'</div>'
+      +'<button onclick="closePicker();goFlow(\'prepare\',\'stay\')" style="font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:8px 16px;background:var(--red);color:white;border:none;cursor:pointer">'+(LANG==="zh"?"前往添加住宿 →":"Add hotels →")+'</button>'
+      +'</div>'
   }
   document.getElementById('pickerList').innerHTML = catBar + items;
 }
@@ -2510,17 +3123,11 @@ try{
   }
 }catch(e){}
 // Update login footer version
-try{var _vEl=document.getElementById('appVersion');if(_vEl)_vEl.textContent=APP_VERSION+' · 京都和纸';}catch(e){}
+try{var _vEl=document.getElementById('appVersion');if(_vEl)_vEl.textContent=APP_VERSION+' · CheungKinFai Idea';}catch(e){}
 try{var _lang=localStorage.getItem('wp4_lang');if(_lang)LANG=_lang;}catch(e){}
 document.getElementById('langBtn').textContent=LANG==='zh'?'EN':'中文';
 // schedDay initialized in S above
-try{
-  var _lastCode=localStorage.getItem('wp4_lastCode');
-  if(_lastCode&&INVITE_CODES[_lastCode]){
-    document.getElementById('inviteInput').value=_lastCode;
-    doLogin();
-  }
-}catch(e){}
+// Login is intentionally required every time on hosted/cloud version.
 
 
 
@@ -2552,16 +3159,54 @@ try{
 
 
 function updHotel(el){
-  var h=D().hotels.find(function(h){return h.id===el.dataset.hid;});
+  var d=D();
+  var h=d.hotels.find(function(h){return h.id===el.dataset.hid;});
   if(!h)return;
   var f=el.dataset.field,val=el.value;
   var cin=h.cin||h.checkin||'',cout=h.cout||h.checkout||'';
-  if(f==='cout'&&val&&cin&&val<=cin){el.style.borderColor='var(--err)';return;}
+  if(f==='cout'&&val&&cin&&val<=cin){
+    el.style.borderColor='var(--err)';
+    el.style.boxShadow='0 0 0 2px rgba(181,70,42,0.3)';
+    el.title=LANG==='zh'?'退房日期不能早于或等于入住日期！':'Check-out must be after check-in!';
+    setTimeout(function(){el.style.boxShadow='';},2000);
+    return;
+  }
   el.style.borderColor='';
   if(f==='cin'){h.cin=val;delete h.checkin;}
   if(f==='cout'){h.cout=val;delete h.checkout;}
+  // Update budget expense name with new nights count
+  var newCin=h.cin||h.checkin||'', newCout=h.cout||h.checkout||'';
+  if(newCin&&newCout&&newCout>newCin){
+    var _n=nightsBetween(newCin,newCout);
+    var _nm=(h.cn||h.en)+' '+(LANG==='zh'?_n+'晚':_n+' nights');
+    var _exp=d.expenses.find(function(e){return e.id==='hotel_'+h.id;});
+    if(_exp){_exp.cn=_nm;_exp.en=_nm;}
+  }
   save();render();
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
